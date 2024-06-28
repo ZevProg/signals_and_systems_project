@@ -1,34 +1,58 @@
 import numpy as np
 import wave
-import scipy.signal as signal
+import scipy.signal
+import matplotlib.pyplot as plt
 
 # Constants
 CHUNK = 1024  # Number of samples per frame
 MIN_PITCH = 50  # Minimum pitch frequency (Hz)
-MAX_PITCH = 500  # Maximum pitch frequency (Hz)
+MAX_PITCH = 800  # Maximum pitch frequency (Hz)
 
-# Autocorrelation method for pitch detection
-def autocorrelation_method(frame, fs, min_pitch, max_pitch):
-    min_period = fs // max_pitch
-    max_period = fs // min_pitch
+# Create pitch estimation function
+def pitch_estimation(frame, fs, min_pitch, max_pitch):
+    # Constants
+    MIN_PERIOD = fs // max_pitch
+    MAX_PERIOD = fs // min_pitch
     
-    frame -= np.mean(frame)  # Remove mean
-    corr = np.correlate(frame, frame, mode='full')
-    corr = corr[len(corr) // 2:]  # Keep only the second half
+    # Remove mean
+    frame -= np.mean(frame)
     
+    # Apply Hamming window
+    windowed_frame = frame * np.hamming(len(frame))
+    
+    # Autocorrelation
+    corr = np.correlate(windowed_frame, windowed_frame, mode='full')
+    corr = corr[len(corr) // 2:]
+    
+    # Thresholding the autocorrelation to remove low-magnitude peaks
+    corr[corr < 0.1 * np.max(corr)] = 0
+    
+    # Find the first positive slope
     d = np.diff(corr)
-    start = np.where(d > 0)[0][0]  # First positive slope
-    peak = np.argmax(corr[start:]) + start
+    start = np.where(d > 0)[0][0]
     
-    if peak >= min_period and peak <= max_period:
-        pitch_period = peak
+    # Find the peak in the specified range
+    peak = np.argmax(corr[start + MIN_PERIOD:start + MAX_PERIOD]) + start + MIN_PERIOD
+    
+    # Calculate pitch
+    if peak >= MIN_PERIOD and peak <= MAX_PERIOD:
+        # Refine peak using parabolic interpolation
+        if peak > 0 and peak < len(corr) - 1:
+            alpha = corr[peak - 1]
+            beta = corr[peak]
+            gamma = corr[peak + 1]
+            p = 0.5 * (alpha - gamma) / (alpha - 2 * beta + gamma)
+            pitch_period = peak + p
+        else:
+            pitch_period = peak
+        
         pitch = fs / pitch_period
     else:
         pitch = 0
     
     return pitch
 
-# Function to process a WAV file
+# Convert wav file to numpy array and plot results
 def process_wav_file(file_path):
     # Open the WAV file
     with wave.open(file_path, 'rb') as wf:
@@ -36,11 +60,6 @@ def process_wav_file(file_path):
         sampwidth = wf.getsampwidth()
         framerate = wf.getframerate()
         num_frames = wf.getnframes()
-        
-        print(f"Channels: {num_channels}")
-        print(f"Sample Width: {sampwidth}")
-        print(f"Frame Rate: {framerate}")
-        print(f"Number of Frames: {num_frames}")
         
         # Read the entire file
         audio_data = wf.readframes(num_frames)
@@ -53,13 +72,28 @@ def process_wav_file(file_path):
             audio_data = audio_data[::num_channels]
         
         # Process the audio in chunks
+        pitches = []
         for i in range(0, len(audio_data), CHUNK):
             frame = audio_data[i:i + CHUNK].astype(np.float32)
             if len(frame) == CHUNK:
-                pitch = autocorrelation_method(frame, framerate, MIN_PITCH, MAX_PITCH)
-                print(f"Detected pitch: {pitch:.2f} Hz")
+                pitch = pitch_estimation(frame, framerate, MIN_PITCH, MAX_PITCH)
+                pitches.append(pitch)
+        
+        # Optional: Apply median filter to smooth pitch estimates
+        if len(pitches) > 0:
+            pitches = scipy.signal.medfilt(pitches, kernel_size=5)
+        
+        # Plot the detected pitches
+        plt.figure(figsize=(10, 6))
+        plt.plot(pitches, label='Detected Pitch')
+        plt.xlabel('Frame')
+        plt.ylabel('Pitch (Hz)')
+        plt.title('Pitch Estimation Over Time')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
 
-# Path to your WAV file
+# Process a WAV file
 file_path = 'C:/Users/Shira/שירה/אוניברסיטה/סמסטר ד/אותות ומערכות/עבודה חלק ב/activity_unproductive.wav'
 process_wav_file(file_path)
