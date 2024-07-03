@@ -1,41 +1,44 @@
 import numpy as np
 import wave
-import scipy.signal
 import matplotlib.pyplot as plt
 
 # Constants
-CHUNK = 1024  # Number of samples per frame
-MIN_PITCH = 50  # Minimum pitch frequency (Hz)
-MAX_PITCH = 800  # Maximum pitch frequency (Hz)
+chunk = 1024  # Number of samples per frame
+min_pitch = 50  # Minimum pitch frequency (Hz)
+max_pitch = 800  # Maximum pitch frequency (Hz)
 
+# The function get: frame from the audio, fs-The sampling frequency of the audio signal and the allowed range of the pitch.
 # Create pitch estimation function
-def pitch_estimation(frame, fs, min_pitch, max_pitch):
+#The function plot: pitch of the frame of the audio.
+def PitchEstimation(frame, fs, min_pitch, max_pitch):
     # Constants
-    MIN_PERIOD = fs // max_pitch
-    MAX_PERIOD = fs // min_pitch
+    min_period = fs // max_pitch
+    max_period = fs // min_pitch
     
-    # Remove mean
+    # Remove mean- remove the DC signal
     frame -= np.mean(frame)
     
-    # Apply Hamming window
+    #Doubling the signal in the hamming window to soften the edges of the signal
     windowed_frame = frame * np.hamming(len(frame))
     
-    # Autocorrelation
+    # Autocorrelation ('full'=we take all the possible shift)
     corr = np.correlate(windowed_frame, windowed_frame, mode='full')
+    #save only the positive shifts
     corr = corr[len(corr) // 2:]
     
-    # Thresholding the autocorrelation to remove low-magnitude peaks
+    # Thresholding the autocorrelation to remove low-magnitude peaks 
     corr[corr < 0.1 * np.max(corr)] = 0
     
     # Find the first positive slope
-    d = np.diff(corr)
-    start = np.where(d > 0)[0][0]
+    slope = np.diff(corr)
+    start_increase = np.where(slope > 0)[0][0]
     
     # Find the peak in the specified range
-    peak = np.argmax(corr[start + MIN_PERIOD:start + MAX_PERIOD]) + start + MIN_PERIOD
+    peak = np.argmax(corr[start_increase + min_period:start_increase + max_period]) + start_increase + min_period
     
     # Calculate pitch
-    if peak >= MIN_PERIOD and peak <= MAX_PERIOD:
+    #Check that the peak is legal
+    if peak >= min_period and peak <= max_period:
         # Refine peak using parabolic interpolation
         if peak > 0 and peak < len(corr) - 1:
             alpha = corr[peak - 1]
@@ -53,7 +56,8 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
     return pitch
 
 # Convert wav file to numpy array and plot results
-def process_wav_file(file_path):
+#input: wav file, output:numpy array.
+def ProcessWavFile(file_path):
     # Open the WAV file
     with wave.open(file_path, 'rb') as wf:
         num_channels = wf.getnchannels()
@@ -73,10 +77,10 @@ def process_wav_file(file_path):
         
         # Process the audio in chunks
         pitches = []
-        for i in range(0, len(audio_data), CHUNK):
-            frame = audio_data[i:i + CHUNK].astype(np.float32)
-            if len(frame) == CHUNK:
-                pitch = pitch_estimation(frame, framerate, MIN_PITCH, MAX_PITCH)
+        for i in range(0, len(audio_data), chunk):
+            frame = audio_data[i:i + chunk].astype(np.float32)
+            if len(frame) == chunk:
+                pitch = PitchEstimation(frame, framerate, min_pitch, max_pitch)
                 pitches.append(pitch)
         
         # Optional: Apply median filter to smooth pitch estimates
@@ -93,7 +97,6 @@ def process_wav_file(file_path):
         plt.grid()
         plt.show()
 
-
 # Process a WAV file
 file_path = 'C:/Users/Shira/שירה/אוניברסיטה/סמסטר ד/אותות ומערכות/עבודה חלק ב/activity_unproductive.wav'
-process_wav_file(file_path)
+ProcessWavFile(file_path)
