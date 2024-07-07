@@ -8,7 +8,7 @@ class VoiceActivityDetector:
         self.filename = filename
         self.frame_duration = frame_duration
         self.threshold = threshold
-        self.aggressiveness = smoothness
+        self.smoothness = smoothness
         self.look_back = self.get_look_back(smoothness)
         self.min_ones = 1  # This can be adjusted as needed
         self.remove_dc_flag = remove_dc
@@ -31,7 +31,7 @@ class VoiceActivityDetector:
         elif level == 3:
             return 8
         else:
-            raise ValueError("Invalid aggressiveness level. Choose between 0, 1, 2, or 3.")
+            raise ValueError("Invalid smoothness level. Choose between 0, 1, 2, or 3.")
 
     def read_wav(self):
         with wave.open(self.filename, 'rb') as wav_file:
