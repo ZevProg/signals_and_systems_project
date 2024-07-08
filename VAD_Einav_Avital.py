@@ -132,6 +132,7 @@ class VoiceActivityDetector:
         plt.figure(figsize=(12, 4))
         plt.plot(times_energy, self.energy, 'b', alpha=0.3, label='Energy')
         plt.plot(times_energy, self.smoothed_speech_segments * np.max(self.energy), linewidth=2, label='Smoothed Speech Segments')
+        plt.axhline(y=self.threshold, color='b', linestyle='--', label='Threshold')
         plt.title('Voice Activity Detection')
         plt.xlabel('Time (s)')
         plt.ylabel('Normalized Energy')
