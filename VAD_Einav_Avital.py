@@ -4,14 +4,26 @@ import matplotlib.pyplot as plt
 
 
 class VoiceActivityDetector:
-    def __init__(self, filename, frame_duration=0.01, threshold=0.1, smoothness=0, remove_dc=True):
+    def __init__(self, filename, frame_duration=0.01, threshold=0.1, smoothness=0, remove_dc=True,
+                 plot_graphs=False):
+        # Parameters Section
         self.filename = filename
         self.frame_duration = frame_duration
         self.threshold = threshold
-        self.smoothness = smoothness
+        self.aggressiveness = smoothness
         self.look_back = self.get_look_back(smoothness)
         self.min_ones = 1  # This can be adjusted as needed
         self.remove_dc_flag = remove_dc
+        self.plot_graphs = plot_graphs
+
+        # Validate Parameters
+        self.validate_parameters()
+
+        # Check if the file is a WAV file
+        if not self.is_wav_file(filename):
+            raise ValueError("The provided file is not a WAV file.")
+
+        # Operations Section
         self.audio_data, self.frame_rate = self.read_wav()
         self.original_audio_data = self.audio_data.copy()
         if self.remove_dc_flag:
@@ -19,6 +31,19 @@ class VoiceActivityDetector:
         self.speech_segments = None
         self.energy = None
         self.smoothed_speech_segments = None
+
+    def validate_parameters(self):
+        # Validate frame_duration
+        if self.frame_duration not in [0.01, 0.02, 0.03]:
+            raise ValueError("frame_duration must be 0.01, 0.02, or 0.03 seconds.")
+
+        # Validate threshold
+        if not (0 <= self.threshold <= 1):
+            raise ValueError("threshold must be between 0 and 1.")
+
+    @staticmethod
+    def is_wav_file(filename):
+        return filename.lower().endswith('.wav')
 
     @staticmethod
     def get_look_back(level):
@@ -31,7 +56,7 @@ class VoiceActivityDetector:
         elif level == 3:
             return 8
         else:
-            raise ValueError("Invalid smoothness level. Choose between 0, 1, 2, or 3.")
+            raise ValueError("Invalid aggressiveness level. Choose between 0, 1, 2, or 3.")
 
     def read_wav(self):
         with wave.open(self.filename, 'rb') as wav_file:
@@ -114,6 +139,8 @@ class VoiceActivityDetector:
         self.smoothed_speech_segments = smoothed_segments
 
     def plot_audio_data(self):
+        if not self.plot_graphs:
+            return
         times_audio = np.arange(len(self.audio_data)) / self.frame_rate
         times_original_audio = np.arange(len(self.original_audio_data)) / self.frame_rate
         plt.figure(figsize=(12, 4))
@@ -128,10 +155,13 @@ class VoiceActivityDetector:
         plt.show()
 
     def plot_vad_results(self):
+        if not self.plot_graphs:
+            return
         times_energy = np.arange(len(self.energy)) * (len(self.audio_data) / len(self.energy) / self.frame_rate)
         plt.figure(figsize=(12, 4))
         plt.plot(times_energy, self.energy, 'b', alpha=0.3, label='Energy')
-        plt.plot(times_energy, self.smoothed_speech_segments * np.max(self.energy), linewidth=2, label='Smoothed Speech Segments')
+        plt.plot(times_energy, self.smoothed_speech_segments * np.max(self.energy), linewidth=2,
+                 label='Smoothed Speech Segments')
         plt.axhline(y=self.threshold, color='b', linestyle='--', label='Threshold')
         plt.title('Voice Activity Detection')
         plt.xlabel('Time (s)')
@@ -140,28 +170,44 @@ class VoiceActivityDetector:
         plt.tight_layout()
         plt.show()
 
-    def print_speech_segments_info(self):
-        # Print the binary sequence showing detected speech segments
+    def get_speech_segments(self):
         binary_sequence = ','.join(map(str, self.smoothed_speech_segments.astype(int)))
-        print(binary_sequence)
+        return binary_sequence
 
 
-def main():
-    # audio_file= "C:\\temp\signal_system\\about_time.wav"
-    # audio_file = "C:\\temp\\signal_system\\activity_unproductive.wav"
-    # audio_file = "C:\\temp\signal_system\Heartbeat.wav"
-    audio_file = "C:\\temp\\signal_system\\Counting.wav"
-    smoothness = 3 # Choose between 0, 1, 2, or 3
-    remove_dc = 1  # 1 to remove DC component, 0 to keep it
-    vad = VoiceActivityDetector(audio_file, frame_duration=0.01, threshold=0.1, smoothness=smoothness, remove_dc=bool(remove_dc))
+def process_audio_file(filename):
+    # Default parameters
+    frame_duration = 0.01  # Choose between 0.01, 0.02, or 0.03
+    threshold = 0.1  # Must be between 0 and 1
+    smoothness = 3  # Choose between 0, 1, 2, or 3
+    remove_dc = True  # True to remove DC component, False to keep it
+    plot_graphs = False  # Set to True to plot graphs, False to disable plotting
+
+    vad = VoiceActivityDetector(filename, frame_duration, threshold, smoothness, remove_dc, plot_graphs)
     vad.vad()
     vad.smooth_speech_segments()
     vad.plot_audio_data()
     vad.plot_vad_results()
-    vad.print_speech_segments_info()
+    return vad.get_speech_segments()
+ 
+
+def main():
+    # Parameters
+    # audio_file= "C:\\temp\signal_system\\about_time.wav"
+    # audio_file = "C:\\temp\\signal_system\\activity_unproductive.wav"
+    # audio_file = "C:\\temp\signal_system\Heartbeat.wav"
+    audio_file = "C:\\temp\\signal_system\\Counting.wav"
+
+    # Process the audio file and get the binary vector
+    binary_vector = process_audio_file(audio_file)
+    print(binary_vector)
 
 
 if __name__ == "__main__":
     main()
 
-
+# for integration - constant parameters:
+# from VAD_for_chain import process_audio_file
+# audio_file = "C:\\temp\\signal_system\\Counting.wav"
+# binary_vector = process_audio_file(audio_file)
+# print(binary_vector)
