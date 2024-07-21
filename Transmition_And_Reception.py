@@ -1,3 +1,4 @@
+
 from random import sample
 import numpy as np
 import scipy.signal as signal
@@ -20,9 +21,12 @@ def save_wav(filename, data, samplerate):
 # Generate a SSB signal
 def ssb_modulate(signal, carrier_freq, samplerate):
     t = np.arange(len(signal)) / samplerate
-    y1 = signal * np.cos(2 * np.pi * carrier_freq * t)
-    y2 = np.imag(scipy.signal.hilbert(signal)) * np.sin(2 * np.pi * carrier_freq * t)
-    ssb_signal = y1 - y2
+    ## cosine part
+    signa_mul_cos = signal * np.cos(2 * np.pi * carrier_freq * t)
+    ## hilbert transform
+    signal_filter_hilbert = scipy.signal.hilbert(signal)
+    siganal_mul_sin = np.real(signal_filter_hilbert) * np.sin(2 * np.pi * carrier_freq * t)
+    ssb_signal = signa_mul_cos - siganal_mul_sin ## SSB signal - upper sideband
     return ssb_signal
 
 # Demodulate the SSB signal
@@ -40,10 +44,10 @@ def ssb_demodulate(ssb_signal, carrier_freq, samplerate):
 def audio_callback(indata, outdata, frames, time, status):
     if status:
         print(status, flush=True)
-    
+
     ssb_signal = ssb_modulate(indata[:, 0], carrier_freq, samplerate)
     recovered_signal = ssb_demodulate(ssb_signal, carrier_freq, samplerate)
-    
+
     outdata[:, 0] = recovered_signal
     outdata[:, 1] = recovered_signal
 
@@ -53,6 +57,7 @@ def main(mode='file', filename=None, duration=5, carrier_freq=10000):
     if mode == 'file' and filename:
         # Load the input WAV file
         data, samplerate = load_wav(filename)
+        carrier_freq = samplerate/2
 
         # Modulate the signal using SSB
         ssb_signal = ssb_modulate(data, carrier_freq, samplerate)
@@ -61,7 +66,7 @@ def main(mode='file', filename=None, duration=5, carrier_freq=10000):
         recovered_signal = ssb_demodulate(ssb_signal, carrier_freq, samplerate)
 
         # Save the recovered signal to an output WAV file
-        output_filename = 'output_' + filename
+        output_filename = 'output_test_' + filename
         save_wav(output_filename, recovered_signal, samplerate)
 
         # Plotting
@@ -69,19 +74,19 @@ def main(mode='file', filename=None, duration=5, carrier_freq=10000):
 
         plt.figure()
         plt.subplot(3, 1, 1)
-        plt.plot(t, data)
+        plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(data))
         plt.title('Original Baseband Signal')
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
 
         plt.subplot(3, 1, 2)
-        plt.plot(t, ssb_signal)
+        plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(ssb_signal))
         plt.title('SSB Modulated Signal (Upper Sideband)')
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
 
         plt.subplot(3, 1, 3)
-        plt.plot(t, recovered_signal)
+        plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(recovered_signal))
         plt.title('Demodulated Signal')
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
@@ -133,5 +138,5 @@ def main(mode='file', filename=None, duration=5, carrier_freq=10000):
 samplerate = 44100
 carrier_freq = 10000
 
-main(mode='file',filename='file_name.wav')
+main(mode='file',filename='input.wav')
 main(mode='live', duration=5, carrier_freq=carrier_freq)
