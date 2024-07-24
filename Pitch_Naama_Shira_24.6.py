@@ -26,12 +26,15 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
     corr = corr[len(corr) // 2:]
     
     # Thresholding the autocorrelation to remove low-magnitude peaks
-    #fix the array so that it is start in the 10 index
     corr[corr < 0.1 * np.max(corr)] = 0
     
     # Find the first positive slope
     d = np.diff(corr)
-    start = np.where(d > 0)[0][0]
+    PositiveSlope=np.where(d > 0)
+    if PositiveSlope[0].size == 0:
+        start=0
+    else:
+        start = PositiveSlope[0][0]
     
     # Find the peak in the specified range
     peak = np.argmax(corr[start + MIN_PERIOD:start + MAX_PERIOD]) + start + MIN_PERIOD
@@ -51,7 +54,8 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
         pitch = fs / pitch_period
     else:
         pitch = 0
-    
+    if(start==0):
+        return None
     return pitch
 
 # Convert wav file to numpy array and plot results
@@ -82,8 +86,8 @@ def process_wav_file_pitches(file_path):
                 pitches.append(pitch)
         
         # Optional: Apply median filter to smooth pitch estimates
-        if len(pitches) > 0:
-            pitches = scipy.signal.medfilt(pitches, kernel_size=5)
+        #if len(pitches) > 0:
+        #    pitches = scipy.signal.medfilt(pitches, kernel_size=5)
         
         # Plot the detected pitches
         # plt.figure(figsize=(10, 6))
