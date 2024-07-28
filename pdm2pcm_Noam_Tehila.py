@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.io.wavfile import write
 
-
 def read_pdm_file(file_path):
     """
     Reads a PDM signal from a text file. Assumes the signal is composed of -1 and 1 values.
@@ -12,63 +11,75 @@ def read_pdm_file(file_path):
     Returns:
         np.array: Array containing the PDM signal.
     """
-    pdm_signal = []  # Initialize an empty list to store the PDM signal
+    pdm_signal = []
 
-    # Open the file for reading
     with open(file_path, 'r') as file:
-        # Read the file line by line
         for line in file:
-            # Split the line into individual values
             values = line.split()
-            # Convert each value to an integer and append to the pdm_signal list
             for val in values:
                 pdm_signal.append(int(val))
 
-    # Convert the list to a numpy array with data type int8
     pdm_array = np.array(pdm_signal, dtype=np.int8)
 
     return pdm_array
 
 
-def cic_filter(pdm_signal, decimation_factor=32):
+def moving_average(signal, window_size):
+    """
+    Computes the moving average of the input signal using a specified window size.
+
+    Parameters:
+        signal (np.array): The input signal.
+        window_size (int): The window size for the moving average.
+
+    Returns:
+        np.array: The signal after applying the moving average.
+    """
+    cumsum = np.cumsum(np.insert(signal, 0, 0))
+    return (cumsum[window_size:] - cumsum[:-window_size]) / float(window_size)
+
+
+def cic_filter(pdm_signal, decimation_factor=64, order=1):
     """
     Applies a CIC filter to the PDM signal.
 
     Parameters:
         pdm_signal (np.array): The PDM signal to filter.
         decimation_factor (int): The decimation factor for the CIC filter.
+        order (int): The order of the CIC filter.
 
     Returns:
         np.array: The filtered PCM signal.
     """
-    # Step 1: Integrator stage
-    # Compute the cumulative sum of the PDM signal
-    integrator = np.cumsum(pdm_signal)
+    # Step 1: Integrator stage (Moving Average)
+    integrator = pdm_signal
+    for _ in range(order):
+        integrator = moving_average(integrator, decimation_factor)
 
     # Step 2: Decimation
-    # Decimate the integrator output by taking every 'decimation_factor'-th sample
     decimated_integrator = integrator[::decimation_factor]
 
     # Step 3: Comb stage
-    # Compute the difference between consecutive samples in the decimated integrator output
-    comb = np.diff(decimated_integrator)
+    comb = decimated_integrator
+    for _ in range(order):
+        comb = np.diff(comb)
 
-    # Return the comb output as the filtered PCM signal
     return comb
 
 
-def pdm_to_pcm(pdm_signal, decimation_factor=32):
+def pdm_to_pcm(pdm_signal, decimation_factor=64, order=1):
     """
     Converts a PDM signal to a PCM signal using a CIC filter.
 
     Parameters:
         pdm_signal (np.array): The PDM signal to convert.
         decimation_factor (int): The decimation factor for the CIC filter.
+        order (int): The order of the CIC filter.
 
     Returns:
         np.array: The PCM signal.
     """
-    pcm_signal = cic_filter(pdm_signal, decimation_factor)
+    pcm_signal = cic_filter(pdm_signal, decimation_factor, order)
     return pcm_signal
 
 
@@ -84,40 +95,32 @@ def save_pcm_as_wav(pcm_signal, sample_rate, file_path):
     Returns:
         None
     """
-    # Normalize the PCM signal to the range of int16
-    # np.max(np.abs(pcm_signal)) finds the maximum absolute value in the signal
-    # This ensures the signal is scaled between -1 and 1
     max_val = np.max(np.abs(pcm_signal))
     normalized_signal = pcm_signal / max_val
-
-    # Scale the normalized signal to the int16 range
     scaled_signal = normalized_signal * 32767
-
-    # Convert the scaled signal to int16 data type
     int16_signal = np.int16(scaled_signal)
-
-    # Write the int16 PCM data to a WAV file
     write(file_path, sample_rate, int16_signal)
-
 
 
 def main():
     # Parameters
     pdm_file_path = r'C:\Users\User\Documents\otot_project\Counting.txt'
-    wav_file_path = r'C:\Users\User\Documents\otot_project\output_counting.wav'
-    sample_rate =307200   # Desired sample rate for the WAV file
-    decimation_factor = 32  # Decimation factor for the CIC filter
+    wav_file_path = r'C:\Users\User\Documents\otot_project\output.wav'
+    pdm_sample_rate = 3072000  # Sample rate of the PDM file
+    pcm_sample_rate = 8000  # Desired sample rate for the WAV file
+    decimation_factor = 48  # Decimation factor for the CIC filter
+    order = 5  # Order of the CIC filter
 
     # Read PDM signal from file
     pdm_signal = read_pdm_file(pdm_file_path)
     print(f"First 10 samples of PDM signal: {pdm_signal[:10]}")
 
     # Convert PDM signal to PCM signal
-    pcm_signal = pdm_to_pcm(pdm_signal, decimation_factor)
+    pcm_signal = pdm_to_pcm(pdm_signal, decimation_factor, order)
     print(f"First 10 samples of PCM signal: {pcm_signal[:10]}")
 
     # Save the PCM signal as a WAV
-    save_pcm_as_wav(pcm_signal, sample_rate // decimation_factor, wav_file_path)
+    save_pcm_as_wav(pcm_signal, pcm_sample_rate, wav_file_path)
     print(f"WAV file saved at: {wav_file_path}")
 
 
