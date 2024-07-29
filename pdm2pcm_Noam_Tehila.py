@@ -108,7 +108,7 @@ def main():
     wav_file_path = r'C:\Users\User\Documents\otot_project\output.wav'
     pdm_sample_rate = 3072000  # Sample rate of the PDM file
     pcm_sample_rate = 8000  # Desired sample rate for the WAV file
-    decimation_factor = 48  # Decimation factor for the CIC filter
+    decimation_factor = 64  # Decimation factor for the CIC filter
     order = 5  # Order of the CIC filter
 
     # Read PDM signal from file
