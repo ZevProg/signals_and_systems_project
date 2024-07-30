@@ -1,62 +1,51 @@
+import wave
 import numpy as np
+from scipy.io import wavfile
 import matplotlib.pyplot as plt
-# Create Sinc-based high-pass filter
-def sinc_high_pass_filter(cutoff, fs, numtaps):
-    """
-    Create a high-pass filter using the sinc function.
 
-    Parameters:
-    cutoff (float): Cutoff frequency in Hz
-    fs (float): Sampling frequency in Hz
-    numtaps (int): Number of filter taps
+def real_time_filter(input_file, output_file, cutoff_frequency=100, numtaps=4400):
+    def sinc_high_pass_filter(cutoff, fs, numtaps):
+        t = np.arange(numtaps) - (numtaps - 1) / 2
+        sinc_func = np.sinc(2 * cutoff * t / fs)
+        window = np.hamming(numtaps)
+        sinc_func *= window
+        sinc_func /= np.sum(sinc_func)
+        delta = np.zeros(numtaps)
+        delta[(numtaps - 1) // 2] = 1
+        return delta - sinc_func
 
-    Returns:
-    numpy array: High-pass filter coefficients
-    """
-    # Generate the time vector centered around zero
-    t = np.arange(numtaps) - (numtaps - 1) / 2
-    # Create sinc function for the low-pass filter
-    sinc_func = np.sinc(2 * cutoff * t / fs)
-    # Apply a window function to the sinc function
-    window = np.hamming(numtaps)
-    sinc_func *= window
-    # Normalize the filter coefficients
-    sinc_func /= np.sum(sinc_func)
-    # Create high-pass filter by subtracting from delta function
-    delta = np.zeros(numtaps)
-    delta[(numtaps - 1) // 2] = 1
-    hpf = delta - sinc_func
-    return hpf
+    # Read the WAV file
+    fs, signal = wavfile.read(input_file)
 
-# Parameters
-cutoff_frequency = 100  # Cutoff frequency in Hz
-numtaps = 4400  # Number of taps in the filter
+    # Convert to float32 for processing
+    signal = signal.astype(np.float32)
 
+    # If stereo, convert to mono by averaging channels
+    if len(signal.shape) > 1:
+        signal = np.mean(signal, axis=1)
 
-# Real-time filtering function using discrete convolution
-def real_time_filter(input_signal, filter_coefficients):
-    """
-    Apply a real-time FIR filter using discrete convolution.
+    # Normalize the signal
+    signal = signal / np.max(np.abs(signal))
 
-    Parameters:
-    input_signal (numpy array): The input signal to be filtered.
-    filter_coefficients (numpy array): The FIR filter coefficients.
+    # Get the high-pass filter coefficients
+    high_pass_filter = sinc_high_pass_filter(cutoff_frequency, fs, numtaps)
 
-    Returns:
-    numpy array: The filtered output signal.
-    """
     # Initialize output signal
-    output_signal = np.zeros_like(input_signal)
+    output_signal = np.zeros_like(signal)
     # Buffer to store previous input values (length of filter coefficients)
-    buffer = np.zeros(len(filter_coefficients))
+    buffer = np.zeros(numtaps)
 
     # Apply the filter sample-by-sample
-    for n in range(len(input_signal)):
+    for n in range(len(signal)):
         # Update the buffer with the current input sample
         buffer = np.roll(buffer, 1)
-        buffer[0] = input_signal[n]
+        buffer[0] = signal[n]
 
         # Compute the output sample by convolving the filter coefficients with the buffer
-        output_signal[n] = np.dot(filter_coefficients, buffer)
+        output_signal[n] = np.dot(high_pass_filter, buffer)
 
-    return output_signal
+    # Save the filtered signal as a new WAV file
+    wavfile.write(output_file, fs, (output_signal * 32767).astype(np.int16))
+
+# Usage example:
+real_time_filter('aspose_פסנתר-+ביחד.wav', 'output_filtered.wav')
