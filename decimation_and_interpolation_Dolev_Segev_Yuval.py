@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.io import wavfile
+import os
 
 def my_convolution(x, y, mode='full'):
     '''
@@ -26,35 +27,51 @@ def my_convolution(x, y, mode='full'):
         return result[start:start + n]
     return result
 
-def down_sample(x, M):
+def generate_new_filename_decimation(input_filename):
+    '''
+    input_filename: The original input file name
+    return: New filename with "new" inserted before the file extension
+    '''
+    base, ext = os.path.splitext(input_filename)
+    new_filename = f"{base}_new_deci{ext}"
+    return new_filename
+
+def generate_new_filename_interpolation(input_filename):
+    '''
+    input_filename: The original input file name
+    return: New filename with "new" inserted before the file extension
+    '''
+    base, ext = os.path.splitext(input_filename)
+    new_filename = f"{base}_new_inter{ext}"
+    return new_filename
+
+    
+def down_sample(filtered_signal, decimation_factor):
     '''
     x: input signal
     M: decimation factor
     return: downsampled signal
     '''
-    return x[::M]
+    return filtered_signal[::decimation_factor]
 
-def decimate(input_filename, M, output_filename):
-    '''
-    x: input signal
-    M: decimation factor
-    return: downsampled signal include anti-aliasing filter 
-    '''
-    samplerate, x = wavfile.read(input_filename)
+def decimate(input_filename, decimation_factor):
+  
+    samplerate, input_signal = wavfile.read(input_filename)
     
-    n = np.arange(-20 * M, 20 * M + 1)
-    h = np.sin(np.pi / M * n) / (np.pi * n)
-    h[n == 0] = 1 / M
-    h /= np.sum(h)  # Normalize filter coefficients
+    time_indices = np.arange(-20 * decimation_factor, 20 * decimation_factor + 1)
+    sinc_filter = np.sin(np.pi / decimation_factor * time_indices) / (np.pi * time_indices)
+    sinc_filter[time_indices == 0] = 1 / decimation_factor
+
+    filtered_signal = my_convolution(input_signal, sinc_filter, mode='same')
+    downsampled_signal = down_sample(filtered_signal, decimation_factor)
     
-    y = my_convolution(x, h, mode='same')
-    y = down_sample(y, M)
+    new_samplerate = int(samplerate / decimation_factor)
+    normalized_signal = np.int16(downsampled_signal / np.max(np.abs(downsampled_signal)) * 32767)  # Normalize signal to int16 range
     
-    samplerate = int(samplerate / M)
-    y = y / np.max(np.abs(y))   
-    wavfile.write(output_filename, samplerate, y)
+    output_filename = generate_new_filename_decimation(input_filename)
+    wavfile.write(output_filename, new_samplerate, normalized_signal)
     
-    return y
+    return output_filename
 
 def my_interpolation_LPF(L,LPF_type):
     '''
@@ -74,17 +91,13 @@ def my_interpolation_LPF(L,LPF_type):
         h=h/np.max(h)
     return h
 
-def up_sample(x, L):
-    '''
-    x: input signal
-    L: interpolation factor
-    return: upsampled signal
-    '''
-    y = np.zeros(L*len(x))
-    y[::L] = x
-    return y
+def up_sample(input_signal, interpolation_factor):
+    
+    up_sampled_signal = np.zeros(interpolation_factor*len(input_signal))
+    up_sampled_signal[::interpolation_factor] = input_signal
+    return up_sampled_signal
 
-def interpolate(input_filename, L, output_filename,filter_type):
+def interpolate(input_filename, L ,filter_type):
     '''
     x: input signal
     L: interpolation factor
@@ -97,22 +110,21 @@ def interpolate(input_filename, L, output_filename,filter_type):
     h=my_interpolation_LPF(L,filter_type)
     y=my_convolution(y, h, mode='same')
     
-    samplerate = int(samplerate * L)
-    y = y / np.max(np.abs(y))  
-    wavfile.write(output_filename, samplerate, y)
+    new_samplerate = int(samplerate * L)
+    y = np.int16(y / np.max(np.abs(y)) * 32767) 
+    output_filename = generate_new_filename_interpolation(input_filename)
+    wavfile.write(output_filename, new_samplerate, y)
      
-    return y
+    return output_filename
 
 
 # Check the functions
 M = 4
 input_filename = "about_time.wav"
-output_filename = "deci_about_time_M_"+str(M)+".wav"
-decimated_signal = decimate(input_filename, M, output_filename)
+decimated_signal = decimate(input_filename, M)
 
 L = 5
 filter_type = 'shanon'
 input_filename = "about_time.wav"
-output_filename = "inter_about_time_L_"+str(L)+".wav"
-interpolate_signal = interpolate(input_filename, L, output_filename, filter_type)
+interpolate_signal = interpolate(input_filename, L, filter_type)
 
