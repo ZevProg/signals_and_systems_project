@@ -19,3 +19,9 @@ DI:
   interpolation_factor: 5
 
 SSB:
+
+
+example:
+  number_of_frames: 10
+  filter: 'lowpass'
+  remove_dc: true
