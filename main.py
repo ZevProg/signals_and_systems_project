@@ -1,5 +1,5 @@
 import modules.pdm2pcm_Noam_Tehila as Pdm2Pcm
-import modules.DC_removal
+import modules.DC_removal as DCRemoval
 import modules.Voice_Activity_Detector_Einav_Avital as VAD
 import modules.Acoustic_Gain_Control as AGC
 import modules.Short_Time_Fourier_Transform as STFT
@@ -8,7 +8,7 @@ import modules.Pitch_Estimation_Naama_Shira as PitchEstimation
 import modules.slowing_Or_speeding_Speech_Hamles_Tzuf as SpeechSpeed
 import modules.decimation_and_interpolation_Dolev_Segev_Yuval as DI
 import modules.Transmition_And_Reception as SSB 
-
+import yaml
 
 
 

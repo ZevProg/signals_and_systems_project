@@ -1,0 +1,21 @@
+Pdm2Pcm:
+
+DCRemoval:
+
+VAD:
+
+AGC:
+
+STFT:
+
+NoiseReduction:
+
+PitchEstimation:
+
+SpeechSpeed:
+
+DI:
+  decimation_factor: 4
+  interpolation_factor: 5
+
+SSB:
