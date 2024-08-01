@@ -100,7 +100,7 @@ def SSB(mode='file', file=None):
         plt.tight_layout()
         plt.show()
 
-        return recovered_signal
+        return output_filename
 
     elif mode == 'live':
         global recorded_data
