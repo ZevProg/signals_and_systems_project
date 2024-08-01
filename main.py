@@ -10,6 +10,9 @@ import modules.decimation_and_interpolation_Dolev_Segev_Yuval as DI
 import modules.Transmition_And_Reception as SSB 
 import yaml
 
+with open('config.yml', 'r') as f:
+    config = yaml.safe_load(f)
+
 
 
 #ido leibowitz
@@ -19,7 +22,7 @@ and transmission and recption ssb
 """
 """"""
 #בוחרים פקטור דצימציה
-decimation_factor = 4
+decimation_factor = config['DI']['decimation_factor']
 #מגדירים משתנה עם שם הקובץ
 input_filename1 = "about_time.wav"
 #שולחים לפונקציה
@@ -28,7 +31,7 @@ decimated_signal1 = decimate(input_filename1, decimation_factor)
 input_filename2 = "activity_unproductive.wav"
 decimated_signal2 = decimate(input_filename2, decimation_factor)
 #לאינטרפולציה מכניסים את הפקטור של פי כמה להגדיל את מספר הדגימות
-interpolation_factor = 5
+interpolation_factor = config['DI']['interpolation_factor']
 #בוחרים באיזה מסנן להשתמש
 filter_type = 'shanon'
 #מגדירים משתנה שמקבל את הקישור לקובץ אודיו
