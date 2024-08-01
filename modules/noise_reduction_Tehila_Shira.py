@@ -1,6 +1,7 @@
 import wave
 import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy.io.wavfile as wav
 
 
@@ -314,74 +315,6 @@ def NoiseReduction(input_file, output_file, speech_segments):
     output_waveform = np.int16(output_waveform / np.max(np.abs(output_waveform)) * 32767)  # Normalize to 16-bit range
     wav.write(output_file, sample_rate, output_waveform)
     print('Output wav file saved:', output_file)
-    if not check_file(input_file):
-        print("This is not a WAV file")
-        return None
-
-    # Load input file
-    print('Loading wav file:', input_file)
-    sample_rate, waveform = wav.read(input_file)
-    waveform = waveform.astype(np.float32) / 32768.0  # Normalize to -1 to 1 range
-
-    # Parameters
-    frame_size = 2048
-    hop_size = 512
-
-    # Ensure speech_segments length matches the number of STFT frames
-    num_frames = 1 + (len(waveform) - frame_size) // hop_size
-    if len(speech_segments) > num_frames:
-        speech_segments = speech_segments[:num_frames]
-    elif len(speech_segments) < num_frames:
-        speech_segments = np.pad(speech_segments, (0, num_frames - len(speech_segments)), 'constant')
-
-    # Perform STFT on the entire noisy signal
-    stft_matrix = STFT(waveform, window_size=frame_size, hop_size=hop_size)
-    magnitude_spectrum = np.abs(stft_matrix)
-    phase_spectrum = np.angle(stft_matrix)
-
-    # Compute noise spectrum from non-speech segments
-    noise_spectrum = np.zeros_like(magnitude_spectrum[:, 0])
-    non_speech_frame_count = 0
-
-    for i, is_speech in enumerate(speech_segments):
-        if is_speech == '0':
-            noise_spectrum += magnitude_spectrum[:, i]
-            non_speech_frame_count += 1
-
-    if non_speech_frame_count > 0:
-        noise_spectrum /= non_speech_frame_count
-    else:
-        print("No non-speech frames detected, estimating noise from the first 0.25 seconds")
-        noise_estimation_duration = 0.25
-        noise_samples = int(noise_estimation_duration * sample_rate)
-        noise_signal = waveform[:noise_samples]
-
-        # Perform STFT on noise signal
-        noise_stft_matrix = STFT(noise_signal, window_size=frame_size, hop_size=hop_size)
-        noise_magnitude_spectrum = np.abs(noise_stft_matrix)
-        noise_spectrum = np.mean(noise_magnitude_spectrum, axis=1)
-
-    mean_noise_spectrum = noise_spectrum
-
-    # Noise reduction
-    cleaned_spectrum = np.zeros_like(magnitude_spectrum)
-    for i, is_speech in enumerate(speech_segments):
-        if is_speech == '0':
-            cleaned_spectrum[:, i] = 0  # Mute the signal
-        else:
-            cleaned_spectrum[:, i] = magnitude_spectrum[:, i] - mean_noise_spectrum
-        cleaned_spectrum[:, i] = np.maximum(cleaned_spectrum[:, i], 0)  # Ensure no negative values
-
-    # Reconstruct signal using inverse STFT
-    cleaned_complex_spectrum = cleaned_spectrum * np.exp(1.0j * phase_spectrum)
-    output_waveform = ISTFT(cleaned_complex_spectrum, hop_size=hop_size)
-
-    # Normalize and save as a wav file
-    output_waveform = output_waveform * 32768
-    output_waveform = np.int16(output_waveform / np.max(np.abs(output_waveform)) * 32767)  # Normalize to 16-bit range
-    wav.write(output_file, sample_rate, output_waveform)
-    print('Output wav file saved:', output_file)
-
 
 
 def main():
@@ -391,7 +324,7 @@ def main():
     # audio_file = "C:\\temp\signal_system\Heartbeat.wav"
     #test1
     input_file = 'test1_nr.wav'
-    output_file = 'cleaned_test1_new.wav'
+    output_file = 'cleaned_test1.wav'
     binary_vector = process_audio_file(input_file)
     print (binary_vector)
     NoiseReduction(input_file,output_file,binary_vector) 
@@ -399,7 +332,7 @@ def main():
 
     #test2
     input_file = 'test2_nr.wav'
-    output_file = 'cleaned_test2_new.wav'
+    output_file = 'cleaned_test2.wav'
     binary_vector = process_audio_file(input_file)
     print (binary_vector)
     NoiseReduction(input_file,output_file,binary_vector) 
@@ -408,7 +341,7 @@ def main():
 
     #test3
     input_file = 'test3_nr.wav'
-    output_file = 'cleaned_test3_new.wav'
+    output_file = 'cleaned_test3.wav'
     binary_vector = process_audio_file(input_file)
     print (binary_vector)
     NoiseReduction(input_file,output_file,binary_vector) 
@@ -416,7 +349,7 @@ def main():
 
     #test4
     input_file = 'test4_nr.wav'
-    output_file = 'cleaned_test4_nwe.wav'
+    output_file = 'cleaned_test4.wav'
     binary_vector = process_audio_file(input_file)
     print (binary_vector)
     NoiseReduction(input_file,output_file,binary_vector) 
@@ -425,7 +358,7 @@ def main():
 
     #test5
     input_file = 'noisy_audio.wav'
-    output_file = 'cleaned_noisy_audio_new.wav'
+    output_file = 'cleaned_noisy_audio.wav'
     binary_vector = process_audio_file(input_file)
     print (binary_vector)
     NoiseReduction(input_file,output_file,binary_vector) 
