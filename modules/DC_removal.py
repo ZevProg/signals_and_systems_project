@@ -3,7 +3,7 @@ import numpy as np
 from scipy.io import wavfile
 import io
 
-def DC_Removal_filter(input_file, cutoff_frequency=100, numtaps=4400):
+def DC_Removal_filter(input_file):
     # Check if the input file is a WAV file
     if not isinstance(input_file, (io.BytesIO, wave.Wave_read)):
         return "Error: Input must be a WAV file object."
@@ -42,6 +42,8 @@ def DC_Removal_filter(input_file, cutoff_frequency=100, numtaps=4400):
     signal = signal / np.max(np.abs(signal))
     
     # Get the high-pass filter coefficients
+    cutoff_frequency=100
+    numtaps=4400
     high_pass_filter = sinc_high_pass_filter(cutoff_frequency, fs, numtaps)
     
     # Initialize output signal
