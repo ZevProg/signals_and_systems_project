@@ -3,7 +3,7 @@ import numpy as np
 from scipy.io import wavfile
 import matplotlib.pyplot as plt
 
-def real_time_filter(input_file, output_file, cutoff_frequency=100, numtaps=4400):
+def DC_Removal_filter(input_file, output_file, cutoff_frequency=100, numtaps=4400):
     def sinc_high_pass_filter(cutoff, fs, numtaps):
         t = np.arange(numtaps) - (numtaps - 1) / 2
         sinc_func = np.sinc(2 * cutoff * t / fs)
@@ -47,5 +47,3 @@ def real_time_filter(input_file, output_file, cutoff_frequency=100, numtaps=4400
     # Save the filtered signal as a new WAV file
     wavfile.write(output_file, fs, (output_signal * 32767).astype(np.int16))
     return output_file
-# Usage example:
-real_time_filter('aspose_פסנתר-+ביחד.wav', 'output_filtered.wav')
