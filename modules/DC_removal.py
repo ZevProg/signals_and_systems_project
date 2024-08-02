@@ -4,6 +4,9 @@ from scipy.io import wavfile
 import matplotlib.pyplot as plt
 
 def DC_Removal_filter(input_file, output_file, cutoff_frequency=100, numtaps=4400):
+        # Check if the input file is a WAV file
+    if not input_file.lower().endswith('.wav'):
+        return "Error: Input file must be a WAV file."
     def sinc_high_pass_filter(cutoff, fs, numtaps):
         t = np.arange(numtaps) - (numtaps - 1) / 2
         sinc_func = np.sinc(2 * cutoff * t / fs)
