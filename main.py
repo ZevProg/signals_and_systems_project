@@ -40,28 +40,43 @@ dc_removal_output=DC_Removal_filter(pdm_output)
 conection decimation and interpolation
 and transmission and recption ssb
 """
-""""""
-#בוחרים פקטור דצימציה
-decimation_factor = config['DI']['decimation_factor']
+"""מכניסים קובץ wav כאות כניסה אחר כך בודקים איזה סוג מסנן המשתמש רוצה
+   בהתאם לבחירה שלו לפי הקובץ config מכניסים את שאר הפרמטרים הרלוונטים כולל הפקטור,  סוג הסינון(אם מדובר באינטרפולציה).
+    ומפעילים את הפונקציה המבוקשת של הסינון ובנוסף  מעדכנים את הקלט של הפונקציה הבאה להיות הפלט של מה שיצא
+  אם נבחר משהו שלא מתאים (אינטרפולציה או דצימציה ) מחזיר הודעת שגיאה ומאתחל את הקלט לאות הבא להיות האות המקורי שהוכנס 
+"""
 #מגדירים משתנה עם שם הקובץ
-input_filename1 = "about_time.wav"
-#שולחים לפונקציה
-decimated_signal1 = decimate(input_filename1, decimation_factor)
-#עוד נסיון עם קובץ אחר
-input_filename2 = "activity_unproductive.wav"
-decimated_signal2 = decimate(input_filename2, decimation_factor)
-#לאינטרפולציה מכניסים את הפקטור של פי כמה להגדיל את מספר הדגימות
-interpolation_factor = config['DI']['interpolation_factor']
-#בוחרים באיזה מסנן להשתמש
-filter_type = 'shanon'
-#מגדירים משתנה שמקבל את הקישור לקובץ אודיו
-input_filename3 = "about_time.wav"
-#מכניסים הכל לתוך הפונקציה ובהצלחה
-interpolate_signal = interpolate(input_filename3, interpolation_factor, filter_type)
+input_filename = "about_time.wav"
+if(config['DI']['decimation_or_interpolation']=='decimation'):
+    #בוחרים פקטור דצימציה
+    decimation_factor = config['DI']['decimation_factor']
+    input_to_ssb =decimation_factor
+    # שולחים לפונקציה
+    decimated_signal = decimate(input_filename, decimation_factor)
+elif(config['DI']['decimation_or_interpolation']=='interpolation'):
+    #לאינטרפולציה מכניסים את הפקטור של פי כמה להגדיל את מספר הדגימות
+    interpolation_factor = config['DI']['interpolation_factor']
+    #בוחרים באיזה מסנן להשתמש
+    filter_type = config['DI']['interpolation_filter_type']
+    #מכניסים הכל לתוך הפונקציה ובהצלחה
+    interpolate_signal = interpolate(input_filename1, interpolation_factor, filter_type)
+    input_to_ssb=interpolate_signal
+else:
+    print ("eror, you didnt choose the corect filter")
+    print("the output stays as the input")
+    input_to_ssb=input_filename
+
+""" לפי מה שהמשתמש הגדיר בconfig בוחרים מצב של הssb ולפי זה מפעילים את הפונקציה עם הפרמטרים המתאימים 
+אם לא נבחר מצב תקין משאיר את הפלט כמו הקלט"""
+if(config[SSB]['ssb_mode']=='file'):
+    ssb_transmittion = SSB(mode='file', file=input_to_ssb)
+elif(config[SSB]['ssb_mode']=='live'):
+    ssb_transmittion = SSB(mode='live', file=input_to_ssb)
+else:
+    print ("eror, you didnt choose the corect mode")
+    print("the output stays as the input")
+    ssb_transmittion=input_to_ssb
 #בהערה יש דוגמא לכך ששירשרתי את הפונקציה עם עצמה כדי לראות שעובד
 #interpolate_signal2 = interpolate(interpolate_signal, interpolation_factor, filter_type)
 #interpolate_signal3 = interpolate(interpolate_signal2, interpolation_factor, filter_type)
-#  עבור הפונקציה של ssb צריך לבחור אם רוציה filr או live ניתן לראות כי הקובץ שהכנסתי הוא קובץ שנוצר באינטרפולציה ולכן השירשור עובד בין הפונקציות
-ssb_transmittion = SSB(mode='file',file=interpolate_signal)
-#זה דומא להרצה של הלייב מה שאני הבנתי זה שאין משמעות לשם של הקובץ כל עוד  הוא חוקי כי הלייב לא משתמש בו באמת פשוט הם מוגדרים באותה פונקציה אז צריך לשלוח קובת חוקי
-#ssb_transmittion = SSB(mode='live',file=interpolate_signal)
+

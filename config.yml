@@ -21,11 +21,14 @@ PitchEstimation:
 SpeechSpeed:
 
 DI:
+#decimation and interpolation
   decimation_factor: 4
   interpolation_factor: 5
+  decimation_or_interpolation:'interpolation' #'decimation', 'interpolation'
+  interpolation_filter_type: 'ZOH' #'ZOH', 'FOH', 'shanon' 
 
 SSB:
-
+  ssb_mode: 'file' #'live', 'file'  
 
 example:
   number_of_frames: 10
