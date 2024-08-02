@@ -1,4 +1,5 @@
 Pdm2Pcm:
+user_pdm_file_path:'path_to_pdm_file.txt'
 pcm_sample_rate:8000  
 decimation_factor:64  
 order:4 
