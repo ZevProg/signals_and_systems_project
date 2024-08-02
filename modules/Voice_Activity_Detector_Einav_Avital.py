@@ -1,30 +1,37 @@
 import wave
 import numpy as np
 import matplotlib.pyplot as plt
+import io
+from io import BytesIO
 
 
 class VoiceActivityDetector:
-    def __init__(self, filename, frame_duration=0.01, threshold=0.1, smoothness=0, remove_dc=True,
+    def __init__(self, input_file, frame_duration=0.01, threshold=0.1, smoothness=0, remove_dc=False,
                  plot_graphs=False):
+        """
+        Initialize the VoiceActivityDetector with the given parameters.
+        :param input_file: Input file object (BytesIO)
+        :param frame_duration: Duration of each frame in seconds (0.01, 0.02, or 0.03)
+        :param threshold: Energy threshold for speech detection (0 to 1)
+        :param smoothness: Smoothness level for VAD (0, 1, 2, or 3)
+        :param remove_dc: Boolean to remove DC component from the audio data
+        :param plot_graphs: Boolean to plot graphs for debugging
+        """
         # Parameters Section
-        self.filename = filename
+        self.input_file = input_file
         self.frame_duration = frame_duration
         self.threshold = threshold
         self.aggressiveness = smoothness
         self.look_back = self.get_look_back(smoothness)
-        self.min_ones = 1  # This can be adjusted as needed
+        self.min_ones = 1
         self.remove_dc_flag = remove_dc
         self.plot_graphs = plot_graphs
 
         # Validate Parameters
         self.validate_parameters()
 
-        # Check if the file is a WAV file
-        if not self.is_wav_file(filename):
-            raise ValueError("The provided file is not a WAV file.")
-
         # Operations Section
-        self.audio_data, self.frame_rate = self.read_wav()
+        self.audio_data, self.frame_rate = self.read_wav(self.input_file)
         self.original_audio_data = self.audio_data.copy()
         if self.remove_dc_flag:
             self.audio_data = self.remove_dc_component(self.audio_data)
@@ -33,6 +40,10 @@ class VoiceActivityDetector:
         self.smoothed_speech_segments = None
 
     def validate_parameters(self):
+        """
+        Validate the parameters passed to the VoiceActivityDetector.
+        :return: None
+        """
         # Validate frame_duration
         if self.frame_duration not in [0.01, 0.02, 0.03]:
             raise ValueError("frame_duration must be 0.01, 0.02, or 0.03 seconds.")
@@ -42,11 +53,12 @@ class VoiceActivityDetector:
             raise ValueError("threshold must be between 0 and 1.")
 
     @staticmethod
-    def is_wav_file(filename):
-        return filename.lower().endswith('.wav')
-
-    @staticmethod
     def get_look_back(level):
+        """
+        Get the look-back window size based on the smoothness level.
+        :param level: Smoothness level (0, 1, 2, or 3)
+        :return: Look-back window size
+        """
         if level == 0:
             return 0
         elif level == 1:
@@ -58,16 +70,26 @@ class VoiceActivityDetector:
         else:
             raise ValueError("Invalid aggressiveness level. Choose between 0, 1, 2, or 3.")
 
-    def read_wav(self):
-        with wave.open(self.filename, 'rb') as wav_file:
-            # Get basic information
-            n_channels = wav_file.getnchannels()
-            sample_width = wav_file.getsampwidth()
-            frame_rate = wav_file.getframerate()
-            n_frames = wav_file.getnframes()
+    def read_wav(self, input_file):
+        """
+        Read the WAV file and return the audio data and frame rate.
+        :param input_file: Input file object
+        :return: Tuple of audio data and frame rate
+        """
+        # Check if the file is a WAV file
+        try:
+            with wave.open(input_file, 'rb') as input_wav_file:
+                # Get basic information
+                n_channels = input_wav_file.getnchannels()
+                sample_width = input_wav_file.getsampwidth()
+                frame_rate = input_wav_file.getframerate()
+                n_frames = input_wav_file.getnframes()
 
-            # Read raw audio data
-            raw_data = wav_file.readframes(n_frames)
+                # Read raw audio data
+                raw_data = input_wav_file.readframes(n_frames)
+
+        except Exception as X:
+            raise ValueError("The provided file is not a WAV file.")
 
         # Convert raw data to numpy array
         if sample_width == 1:
@@ -91,6 +113,8 @@ class VoiceActivityDetector:
     def remove_dc_component(self, audio_data):
         """
         Removes the DC component from the audio data.
+        :param audio_data: Numpy array of audio data
+        :return: Numpy array of audio data without DC component
         """
         # Calculate the DC component (mean of the signal)
         dc_component = np.mean(audio_data)
@@ -101,6 +125,10 @@ class VoiceActivityDetector:
         return ac_component
 
     def vad(self):
+        """
+        Perform Voice Activity Detection on the audio data.
+        :return: None
+        """
         # Calculate frame size
         frame_size = int(self.frame_rate * self.frame_duration)
 
@@ -129,6 +157,7 @@ class VoiceActivityDetector:
     def smooth_speech_segments(self):
         """
         Smooths the speech segments based on a look-back window.
+        :return: None
         """
         smoothed_segments = self.speech_segments.copy()
         for i in range(len(self.speech_segments)):
@@ -139,6 +168,10 @@ class VoiceActivityDetector:
         self.smoothed_speech_segments = smoothed_segments
 
     def plot_audio_data(self):
+        """
+        Plot the audio data before and after DC removal.
+        :return: None
+        """
         if not self.plot_graphs:
             return
         times_audio = np.arange(len(self.audio_data)) / self.frame_rate
@@ -155,6 +188,10 @@ class VoiceActivityDetector:
         plt.show()
 
     def plot_vad_results(self):
+        """
+        Plot the results of Voice Activity Detection.
+        :return: None
+        """
         if not self.plot_graphs:
             return
         times_energy = np.arange(len(self.energy)) * (len(self.audio_data) / len(self.energy) / self.frame_rate)
@@ -171,43 +208,39 @@ class VoiceActivityDetector:
         plt.show()
 
     def get_speech_segments(self):
+        """
+        Get the binary sequence showing detected speech segments.
+        :return: Binary sequence of detected speech segments
+        """
         binary_sequence = ','.join(map(str, self.smoothed_speech_segments.astype(int)))
         return binary_sequence
 
 
-def process_audio_file(filename):
+def process_audio_file(input_file):
+    """
+    Process the audio file and perform Voice Activity Detection.
+    :param input_file: Input file object
+    :return: Binary sequence of detected speech segments
+    """
     # Default parameters
-    frame_duration = 0.01  # Choose between 0.01, 0.02, or 0.03
-    threshold = 0.1  # Must be between 0 and 1
-    smoothness = 3  # Choose between 0, 1, 2, or 3
-    remove_dc = True  # True to remove DC component, False to keep it
-    plot_graphs = False  # Set to True to plot graphs, False to disable plotting
+    frame_duration = 0.01
+    threshold = 0.1
+    smoothness = 0
+    remove_dc = False
+    plot_graphs = False
 
-    vad = VoiceActivityDetector(filename, frame_duration, threshold, smoothness, remove_dc, plot_graphs)
+    vad = VoiceActivityDetector(input_file, frame_duration, threshold, smoothness, remove_dc, plot_graphs)
     vad.vad()
     vad.smooth_speech_segments()
     vad.plot_audio_data()
     vad.plot_vad_results()
     return vad.get_speech_segments()
- 
+
 
 def main():
-    # Parameters
-    # audio_file= "C:\\temp\signal_system\\about_time.wav"
-    # audio_file = "C:\\temp\\signal_system\\activity_unproductive.wav"
-    # audio_file = "C:\\temp\signal_system\Heartbeat.wav"
-    audio_file = "C:\\temp\\signal_system\\Counting.wav"
-
-    # Process the audio file and get the binary vector
-    binary_vector = process_audio_file(audio_file)
-    print(binary_vector)
+    binary_vector = process_audio_file(output_wav)
+    return binary_vector
 
 
 if __name__ == "__main__":
     main()
-
-# for integration - constant parameters:
-# from VAD_for_chain import process_audio_file
-# audio_file = "C:\\temp\\signal_system\\Counting.wav"
-# binary_vector = process_audio_file(audio_file)
-# print(binary_vector)
