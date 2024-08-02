@@ -23,5 +23,5 @@ SSB:
 
 example:
   number_of_frames: 10
-  filter: 'lowpass'
+  filter: 'lowpass' # 'lowpass', 'highpass', 'bandpass', 'bandstop'
   remove_dc: true
