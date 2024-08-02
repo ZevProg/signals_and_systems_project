@@ -237,10 +237,10 @@ def process_audio_file(input_file):
     return vad.get_speech_segments()
 
 
-def main():
-    binary_vector = process_audio_file(output_wav)
-    return binary_vector
+# def main():
+    # binary_vector = process_audio_file(output_wav)
+    # return binary_vector
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+    # main()
