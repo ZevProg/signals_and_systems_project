@@ -13,6 +13,27 @@ import yaml
 with open('config.yml', 'r') as f:
     config = yaml.safe_load(f)
 
+#Hadar Semama
+#Connection of pdm2pcm and dc removal
+
+#The address of the user's pdm file
+pcm_sample_rate=config['Pdm2Pcm']['pcm_sample_rate']
+decimation_factor=config['Pdm2Pcm']['decimation_factor']
+order=config['Pdm2Pcm']['order']
+user_pdm_file_path =config['Pdm2Pcm']['user_pdm_file_path']
+
+#Convert the pdm file to a wav signal
+pdm_output=Pdm2Pcm(user_pdm_file_path)
+
+#Pdm2Pcm converts the pdm file received from the user into a wave signal
+#The wave signal enters as input to the dc removal model 
+cutoff_frequency=config['DCRemoval']['cutoff_frequency']
+numtaps=config['DCRemoval']['numtaps']
+
+#Removal of the DC part of the signal
+dc_removal_output=DC_Removal_filter(pdm_output) 
+
+
 
 
 #ido leibowitz
