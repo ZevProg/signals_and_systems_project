@@ -1,6 +1,11 @@
 Pdm2Pcm:
+pcm_sample_rate:8000  
+decimation_factor:64  
+order:4 
 
 DCRemoval:
+cutoff_frequency:100
+numtaps=4400
 
 VAD:
 
