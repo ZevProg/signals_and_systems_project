@@ -3,7 +3,7 @@ import numpy as np
 from scipy.io import wavfile
 import io
 
-def DC_Removal_filter(input_file, output_file, cutoff_frequency=100, numtaps=4400):
+def DC_Removal_filter(input_file, cutoff_frequency=100, numtaps=4400):
     # Check if the input file is a WAV file
     if not isinstance(input_file, (io.BytesIO, wave.Wave_read)):
         return "Error: Input must be a WAV file object."
@@ -61,11 +61,17 @@ def DC_Removal_filter(input_file, output_file, cutoff_frequency=100, numtaps=440
     # Convert back to int16
     output_signal = (output_signal * 32767).astype(np.int16)
     
-    # Write the filtered signal to a new WAV file
-    with wave.open(output_file, 'wb') as wav_file:
+    # Create a BytesIO object to store the output WAV
+    output_wav = io.BytesIO()
+    
+    # Write the filtered signal to the BytesIO object
+    with wave.open(output_wav, 'wb') as wav_file:
         wav_file.setnchannels(1)  # mono
         wav_file.setsampwidth(2)  # 2 bytes per sample
         wav_file.setframerate(fs)
         wav_file.writeframes(output_signal.tobytes())
     
-    return output_file
+    # Reset the BytesIO object's position to the beginning
+    output_wav.seek(0)
+    
+    return output_wav
