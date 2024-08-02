@@ -41,9 +41,6 @@ def DC_Removal_filter(input_file):
     # Normalize the signal
     signal = signal / np.max(np.abs(signal))
     
-    # Get the high-pass filter coefficients
-    cutoff_frequency=100
-    numtaps=4400
     high_pass_filter = sinc_high_pass_filter(cutoff_frequency, fs, numtaps)
     
     # Initialize output signal
