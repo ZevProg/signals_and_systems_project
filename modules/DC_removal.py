@@ -7,7 +7,7 @@ def real_time_filter(input_file, output_file, cutoff_frequency=100, numtaps=4400
     def sinc_high_pass_filter(cutoff, fs, numtaps):
         t = np.arange(numtaps) - (numtaps - 1) / 2
         sinc_func = np.sinc(2 * cutoff * t / fs)
-        window = np.hamming(numtaps)
+        window = np.array([0.54 - 0.46 * np.cos(2 * np.pi * n / (numtaps - 1)) for n in range(numtaps)])
         sinc_func *= window
         sinc_func /= np.sum(sinc_func)
         delta = np.zeros(numtaps)
