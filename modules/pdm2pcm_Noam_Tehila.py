@@ -111,10 +111,6 @@ def Pdm2Pcm(pdm_file_path):
     Returns:
         bytes: The WAV file data as a bytes object.
     """
-    # Parameters
-    pcm_sample_rate = 8000  # Desired sample rate for the WAV file
-    decimation_factor = 64  # Decimation factor for the CIC filter
-    order = 4  # Order of the CIC filter
 
     # Read PDM signal from file
     pdm_signal = read_pdm_file(pdm_file_path)
