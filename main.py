@@ -16,7 +16,6 @@ with open('config.yml', 'r') as f:
 #Hadar Semama
 #Connection of pdm2pcm and dc removal
 
-#The address of the user's pdm file
 pcm_sample_rate=config['Pdm2Pcm']['pcm_sample_rate']
 decimation_factor=config['Pdm2Pcm']['decimation_factor']
 order=config['Pdm2Pcm']['order']
