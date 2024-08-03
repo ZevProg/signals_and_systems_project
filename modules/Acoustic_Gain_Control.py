@@ -1,83 +1,97 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import soundfile as sf
-import os
 
-def read_audio(file_path):
-    if not os.path.isfile(file_path):
-        raise FileNotFoundError(f"The file {file_path} does not exist.")
-    signal, samplerate = sf.read(file_path)
-    if signal.ndim > 1:
-        signal = signal[:, 0]  # Convert to mono if stereo
-    return signal, samplerate
+def vad_aware_agc_process(input_signal, binary_vector, sample_rate=44100):
+    """
+    Apply VAD-aware Automatic Gain Control (AGC) to the input WAV signal.
 
-def write_audio(file_path, signal, samplerate):
-    output_dir = os.path.dirname(file_path)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    sf.write(file_path, signal, samplerate)
+    Args:
+    input_signal (np.array): Input audio signal (raw samples)
+    binary_vector (np.array): VAD decision for each 10ms frame (1 for speech, 0 for non-speech)
+    sample_rate (int): Sample rate of the input signal (default 44100 Hz)
 
-def vad_agc(signal, vad_array, samplerate, target_level=0.5, attack_time=0.005, release_time=0.1, noise_floor=-60):
-    # Convert time constants to samples
-    attack_samples = int(attack_time * samplerate)
-    release_samples = int(release_time * samplerate)
+    Returns:
+    np.array: Processed audio signal after applying VAD-aware AGC
+    """
 
-    # Initialize gain and envelope
-    gain = 1.0
-    envelope = np.zeros_like(signal)
-    agc_signal = np.zeros_like(signal)
-    noise_floor_linear = 10 ** (noise_floor / 20)
+    def compute_rms(signal, window_size):
+        """
+        Compute the Root Mean Square (RMS) of the signal using a sliding window.
+        
+        Args:
+        signal (np.array): Input signal
+        window_size (int): Size of the sliding window in samples
+        
+        Returns:
+        np.array: RMS values
+        """
+        return np.sqrt(np.convolve(signal**2, np.ones(window_size)/window_size, mode='same'))
 
-    if len(vad_array) != len(signal):
-        raise ValueError("VAD array length must match the signal length")
+    # Constants
+    frame_length_ms = 10  # Length of each frame in milliseconds
+    frame_length_samples = int(frame_length_ms * sample_rate / 1000)  # Convert frame length to samples
+    attack_time = 0.01  # Attack time in seconds
+    release_time = 0.1  # Release time in seconds
+    noise_floor = -60  # Noise floor in dB
+    rms_window_ms = 50  # RMS window size in milliseconds
 
-    for i in range(len(signal)):
-        # Calculate instantaneous level
-        instant_level = abs(signal[i])
+    # Convert time constants to sample counts
+    attack_samples = int(attack_time * sample_rate)
+    release_samples = int(release_time * sample_rate)
+    rms_window_samples = int(rms_window_ms * sample_rate / 1000)
 
-        # Update envelope only if VAD is active
-        if vad_array[i] == 1:
-            if instant_level > envelope[i-1]:
+    # Compute target RMS
+    target_rms = compute_rms(np.abs(input_signal), rms_window_samples)
+
+    # Initialize arrays
+    envelope = np.zeros_like(input_signal)  # Envelope of the signal
+    agc_signal = np.zeros_like(input_signal)  # Output signal after AGC
+    noise_floor_linear = 10 ** (noise_floor / 20)  # Convert noise floor from dB to linear scale
+
+    # Check if VAD vector matches the number of frames
+    num_frames = len(binary_vector)
+    expected_frames = (len(input_signal) + frame_length_samples - 1) // frame_length_samples
+    if num_frames != expected_frames:
+        raise ValueError(f"VAD array length ({num_frames}) does not match the expected number of frames ({expected_frames})")
+
+    gain = 1.0  # Initial gain
+
+    # Process each sample
+    for i in range(len(input_signal)):
+        frame_index = i // frame_length_samples  # Determine which frame the current sample belongs to
+        instant_level = abs(input_signal[i])  # Instantaneous level of the current sample
+
+        # Update envelope based on VAD decision
+        if binary_vector[frame_index] == 1:  # Speech frame
+            if i == 0:
                 envelope[i] = instant_level
             else:
-                envelope[i] = envelope[i-1] * (1 - 1/release_samples)
-        else:
-            envelope[i] = envelope[i-1]
+                # Attack: quickly rise to new level
+                envelope[i] = max(instant_level, envelope[i-1] * (1 - 1/release_samples))
+        else:  # Non-speech frame
+            if i == 0:
+                envelope[i] = instant_level
+            else:
+                # Release: slowly fall to noise floor
+                envelope[i] = envelope[i-1]
 
-        # Calculate desired gain
+        # Compute desired gain
         if envelope[i] > noise_floor_linear:
-            desired_gain = target_level / (envelope[i] + 1e-6)  # Avoid division by zero
+            desired_gain = target_rms[i] / (envelope[i] + 1e-6)  # Avoid division by zero
         else:
-            desired_gain = gain  # Maintain current gain for noise floor
+            desired_gain = gain  # Maintain current gain if below noise floor
 
-        # Smoothly approach desired gain
+        # Apply attack/release to gain
         if desired_gain < gain:
+            # Attack: quickly reduce gain
             gain = desired_gain + (gain - desired_gain) * np.exp(-1 / attack_samples)
         else:
+            # Release: slowly increase gain
             gain = desired_gain + (gain - desired_gain) * np.exp(-1 / release_samples)
 
-        # Apply gain
-        agc_signal[i] = signal[i] * gain
+        # Apply gain and clip to prevent overflow
+        agc_signal[i] = np.clip(input_signal[i] * gain, -1.0, 1.0)
 
-    return agc_signal, envelope, np.ones_like(signal) * gain
-
-# Paths
-input_audio_path = '/Users/terner/Desktop/פרוייקט סיום קבוצתי אותות/about_time.wav'
-output_audio_path = '/Users/terner/Desktop/פרוייקט סיום קבוצתי אותות/output_vad_agc.wav'
-
-# Read the input audio file
-signal, samplerate = read_audio(input_audio_path)
-
-# Generate a dummy VAD array (replace this with your actual VAD data)
-# 1 indicates voice activity, 0 indicates no voice activity
-vad_array = np.ones(len(signal))
-
-# Apply VAD-aware AGC to the signal
-agc_signal, envelope, gains = vad_agc(signal, vad_array, samplerate)
-
-# Write the processed audio file
-write_audio(output_audio_path, agc_signal, samplerate)
-
+    return agc_signal
 
 
 print(f"VAD-aware AGC applied and output saved to {output_audio_path}")
