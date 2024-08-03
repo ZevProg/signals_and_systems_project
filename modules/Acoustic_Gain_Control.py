@@ -42,14 +42,9 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
         signal_duration = len(input_signal) / sample_rate
         signal_energy = np.sum(input_signal**2)
         
-        # Adaptive attack and release times
         attack_time = max(0.001, min(0.02, 0.01 * (signal_duration / 10)))
         release_time = max(0.05, min(0.2, 0.1 * (signal_duration / 10)))
-        
-        # Adaptive noise floor
         noise_floor = max(-80, min(-40, -60 + 10 * np.log10(signal_energy)))
-        
-        # Adaptive RMS window
         rms_window_ms = max(20, min(100, 50 * (signal_duration / 10)))
         
         return attack_time, release_time, noise_floor, rms_window_ms
@@ -69,6 +64,21 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
     release_samples = int(release_time * sample_rate)
     rms_window_samples = int(rms_window_ms * sample_rate / 1000)
 
+    # Calculate the number of frames based on the input signal length
+    num_samples = len(input_signal)
+    num_frames = (num_samples + frame_length_samples - 1) // frame_length_samples
+
+    # Ensure the VAD binary vector matches the number of frames
+    if len(binary_vector) < num_frames:
+        # Pad the binary vector if it's too short
+        binary_vector = np.pad(binary_vector, (0, num_frames - len(binary_vector)), mode='constant', constant_values=0)
+    elif len(binary_vector) > num_frames:
+        # Truncate the binary vector if it's too long
+        binary_vector = binary_vector[:num_frames]
+
+    # Now binary_vector length should match num_frames
+    assert len(binary_vector) == num_frames, f"VAD array length ({len(binary_vector)}) does not match the number of frames ({num_frames})"
+
     # Compute target RMS
     target_rms = compute_rms(np.abs(input_signal), rms_window_samples)
 
@@ -76,12 +86,6 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
     envelope = np.zeros_like(input_signal)
     agc_signal = np.zeros_like(input_signal)
     noise_floor_linear = 10 ** (noise_floor / 20)
-
-    # Check if VAD vector matches the number of frames
-    num_frames = len(binary_vector)
-    expected_frames = (len(input_signal) + frame_length_samples - 1) // frame_length_samples
-    if num_frames != expected_frames:
-        raise ValueError(f"VAD array length ({num_frames}) does not match the expected number of frames ({expected_frames})")
 
     gain = 1.0
 
