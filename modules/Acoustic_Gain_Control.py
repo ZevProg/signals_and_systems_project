@@ -1,40 +1,70 @@
 import numpy as np
+import wave
+import io
 
-def vad_aware_agc_process(input_signal, binary_vector, sample_rate=44100):
+def vad_aware_agc_process(input_signal_bytes, binary_vector):
     """
-    Apply VAD-aware Automatic Gain Control (AGC) to the input WAV signal.
+    Apply VAD-aware Automatic Gain Control (AGC) to the input audio signal.
 
     Args:
-    input_signal (np.array): Input audio signal (raw samples)
-    binary_vector (np.array): VAD decision for each 10ms frame (1 for speech, 0 for non-speech)
-    sample_rate (int): Sample rate of the input signal (default 44100 Hz)
+    input_signal_bytes (bytes): Input audio data as bytes
+    binary_vector (np.array): VAD decision for each frame (1 for speech, 0 for non-speech)
 
     Returns:
     np.array: Processed audio signal after applying VAD-aware AGC
     """
+    def extract_audio_data(audio_bytes):
+        with wave.open(io.BytesIO(audio_bytes), 'rb') as wav_file:
+            channels = wav_file.getnchannels()
+            bit_depth = wav_file.getsampwidth()
+            sample_rate = wav_file.getframerate()
+            frame_count = wav_file.getnframes()
+            audio_data = wav_file.readframes(frame_count)
+
+        if bit_depth == 1:
+            data_type = np.int8
+        elif bit_depth == 2:
+            data_type = np.int16
+        else:
+            raise ValueError("Unsupported bit depth in the audio file.")
+
+        audio_array = np.frombuffer(audio_data, dtype=data_type)
+
+        if channels == 2:
+            audio_array = audio_array.reshape(-1, 2).mean(axis=1)
+
+        return audio_array.astype(np.float32) / np.iinfo(data_type).max, sample_rate
 
     def compute_rms(signal, window_size):
-        """
-        Compute the Root Mean Square (RMS) of the signal using a sliding window.
-        
-        Args:
-        signal (np.array): Input signal
-        window_size (int): Size of the sliding window in samples
-        
-        Returns:
-        np.array: RMS values
-        """
         return np.sqrt(np.convolve(signal**2, np.ones(window_size)/window_size, mode='same'))
 
+    def calculate_parameters(input_signal, sample_rate):
+        signal_duration = len(input_signal) / sample_rate
+        signal_energy = np.sum(input_signal**2)
+        
+        # Adaptive attack and release times
+        attack_time = max(0.001, min(0.02, 0.01 * (signal_duration / 10)))
+        release_time = max(0.05, min(0.2, 0.1 * (signal_duration / 10)))
+        
+        # Adaptive noise floor
+        noise_floor = max(-80, min(-40, -60 + 10 * np.log10(signal_energy)))
+        
+        # Adaptive RMS window
+        rms_window_ms = max(20, min(100, 50 * (signal_duration / 10)))
+        
+        return attack_time, release_time, noise_floor, rms_window_ms
+
+    # Extract audio data and sample rate
+    input_signal, sample_rate = extract_audio_data(input_signal_bytes)
+
+    # Calculate adaptive parameters
+    attack_time, release_time, noise_floor, rms_window_ms = calculate_parameters(input_signal, sample_rate)
+
     # Constants
-    frame_length_ms = 10  # Length of each frame in milliseconds
-    frame_length_samples = int(frame_length_ms * sample_rate / 1000)  # Convert frame length to samples
-    attack_time = 0.01  # Attack time in seconds
-    release_time = 0.1  # Release time in seconds
-    noise_floor = -60  # Noise floor in dB
-    rms_window_ms = 50  # RMS window size in milliseconds
+    frame_duration = 0.01  # 10ms frame duration
 
     # Convert time constants to sample counts
+    frame_length_samples = int(frame_duration * sample_rate)
     attack_samples = int(attack_time * sample_rate)
     release_samples = int(release_time * sample_rate)
     rms_window_samples = int(rms_window_ms * sample_rate / 1000)
@@ -43,9 +73,9 @@ def vad_aware_agc_process(input_signal, binary_vector, sample_rate=44100):
     target_rms = compute_rms(np.abs(input_signal), rms_window_samples)
 
     # Initialize arrays
-    envelope = np.zeros_like(input_signal)  # Envelope of the signal
-    agc_signal = np.zeros_like(input_signal)  # Output signal after AGC
-    noise_floor_linear = 10 ** (noise_floor / 20)  # Convert noise floor from dB to linear scale
+    envelope = np.zeros_like(input_signal)
+    agc_signal = np.zeros_like(input_signal)
+    noise_floor_linear = 10 ** (noise_floor / 20)
 
     # Check if VAD vector matches the number of frames
     num_frames = len(binary_vector)
@@ -53,39 +83,35 @@ def vad_aware_agc_process(input_signal, binary_vector, sample_rate=44100):
     if num_frames != expected_frames:
         raise ValueError(f"VAD array length ({num_frames}) does not match the expected number of frames ({expected_frames})")
 
-    gain = 1.0  # Initial gain
+    gain = 1.0
 
     # Process each sample
     for i in range(len(input_signal)):
-        frame_index = i // frame_length_samples  # Determine which frame the current sample belongs to
-        instant_level = abs(input_signal[i])  # Instantaneous level of the current sample
+        frame_index = i // frame_length_samples
+        instant_level = abs(input_signal[i])
 
         # Update envelope based on VAD decision
-        if binary_vector[frame_index] == 1:  # Speech frame
+        if binary_vector[frame_index] == 1:
             if i == 0:
                 envelope[i] = instant_level
             else:
-                # Attack: quickly rise to new level
                 envelope[i] = max(instant_level, envelope[i-1] * (1 - 1/release_samples))
-        else:  # Non-speech frame
+        else:
             if i == 0:
                 envelope[i] = instant_level
             else:
-                # Release: slowly fall to noise floor
                 envelope[i] = envelope[i-1]
 
         # Compute desired gain
         if envelope[i] > noise_floor_linear:
-            desired_gain = target_rms[i] / (envelope[i] + 1e-6)  # Avoid division by zero
+            desired_gain = target_rms[i] / (envelope[i] + 1e-6)
         else:
-            desired_gain = gain  # Maintain current gain if below noise floor
+            desired_gain = gain
 
         # Apply attack/release to gain
         if desired_gain < gain:
-            # Attack: quickly reduce gain
             gain = desired_gain + (gain - desired_gain) * np.exp(-1 / attack_samples)
         else:
-            # Release: slowly increase gain
             gain = desired_gain + (gain - desired_gain) * np.exp(-1 / release_samples)
 
         # Apply gain and clip to prevent overflow
@@ -93,5 +119,5 @@ def vad_aware_agc_process(input_signal, binary_vector, sample_rate=44100):
 
     return agc_signal
 
-
-print(f"VAD-aware AGC applied and output saved to {output_audio_path}")
+# Example usage:
+# processed_signal = vad_aware_agc_process(audio_bytes, binary_vector)
