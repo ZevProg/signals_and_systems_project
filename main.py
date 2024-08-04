@@ -38,8 +38,8 @@ dc_removal_output=DC_Removal_filter(pdm_output)
 frame_duration = config['VAD']['frame_duration']
 threshold = config['VAD']['threshold']
 smoothness = config['VAD']['smoothness']
-plot_graphs = config['VAD'][plot_graphs']
-remove_dc = config['VAD'][remove_dc']
+plot_graphs = config['VAD']['plot_graphs']
+remove_dc = config['VAD']['remove_dc']
 
 #DC to VAD
 #binary vector for speech detection (1 for speech 0 for noise)
