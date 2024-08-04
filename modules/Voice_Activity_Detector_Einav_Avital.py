@@ -6,8 +6,8 @@ from io import BytesIO
 
 
 class VoiceActivityDetector:
-    def __init__(self, input_file, frame_duration=0.01, threshold=0.1, smoothness=0, remove_dc=False,
-                 plot_graphs=False):
+    def __init__(self, input_file, frame_duration, threshold, smoothness, remove_dc,
+                 plot_graphs):
         """
         Initialize the VoiceActivityDetector with the given parameters.
         :param input_file: Input file object (BytesIO)
@@ -222,12 +222,6 @@ def process_audio_file(input_file):
     :param input_file: Input file object
     :return: Binary sequence of detected speech segments
     """
-    # Default parameters
-    frame_duration = 0.01
-    threshold = 0.1
-    smoothness = 0
-    remove_dc = False
-    plot_graphs = False
 
     vad = VoiceActivityDetector(input_file, frame_duration, threshold, smoothness, remove_dc, plot_graphs)
     vad.vad()
