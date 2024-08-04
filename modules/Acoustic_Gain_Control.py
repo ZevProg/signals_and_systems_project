@@ -11,7 +11,7 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
     binary_vector (np.array): VAD decision for each frame (1 for speech, 0 for non-speech)
 
     Returns:
-    np.array: Processed audio signal after applying VAD-aware AGC
+    bytes: Processed audio signal as WAV bytes
     """
     def extract_audio_data(audio_bytes):
         with wave.open(io.BytesIO(audio_bytes), 'rb') as wav_file:
@@ -33,7 +33,7 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
         if channels == 2:
             audio_array = audio_array.reshape(-1, 2).mean(axis=1)
 
-        return audio_array.astype(np.float32) / np.iinfo(data_type).max, sample_rate
+        return audio_array.astype(np.float32) / np.iinfo(data_type).max, sample_rate, channels, bit_depth
 
     def compute_rms(signal, window_size):
         return np.sqrt(np.convolve(signal**2, np.ones(window_size)/window_size, mode='same'))
@@ -50,7 +50,7 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
         return attack_time, release_time, noise_floor, rms_window_ms
 
     # Extract audio data and sample rate
-    input_signal, sample_rate = extract_audio_data(input_signal_bytes)
+    input_signal, sample_rate, channels, bit_depth = extract_audio_data(input_signal_bytes)
 
     # Calculate adaptive parameters
     attack_time, release_time, noise_floor, rms_window_ms = calculate_parameters(input_signal, sample_rate)
@@ -70,13 +70,10 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
 
     # Ensure the VAD binary vector matches the number of frames
     if len(binary_vector) < num_frames:
-        # Pad the binary vector if it's too short
         binary_vector = np.pad(binary_vector, (0, num_frames - len(binary_vector)), mode='constant', constant_values=0)
     elif len(binary_vector) > num_frames:
-        # Truncate the binary vector if it's too long
         binary_vector = binary_vector[:num_frames]
 
-    # Now binary_vector length should match num_frames
     assert len(binary_vector) == num_frames, f"VAD array length ({len(binary_vector)}) does not match the number of frames ({num_frames})"
 
     # Compute target RMS
@@ -121,7 +118,26 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
         # Apply gain and clip to prevent overflow
         agc_signal[i] = np.clip(input_signal[i] * gain, -1.0, 1.0)
 
-    return agc_signal
+    # Convert the processed signal back to the original data type
+    if bit_depth == 1:
+        output_signal = (agc_signal * 127).astype(np.int8)
+    elif bit_depth == 2:
+        output_signal = (agc_signal * 32767).astype(np.int16)
+
+    # Create a BytesIO object to hold the WAV data
+    output_bytes = io.BytesIO()
+
+    # Write the processed audio to a WAV file in memory
+    with wave.open(output_bytes, 'wb') as wav_file:
+        wav_file.setnchannels(channels)
+        wav_file.setsampwidth(bit_depth)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(output_signal.tobytes())
+
+    # Get the WAV bytes
+    wav_bytes = output_bytes.getvalue()
+
+    return wav_bytes
 
 # Example usage:
-# processed_signal = vad_aware_agc_process(audio_bytes, binary_vector)
+# processed_wav_bytes = vad_aware_agc_process(input_wav_bytes, binary_vector)
