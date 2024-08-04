@@ -14,7 +14,6 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector, frame_duration=0.01
     bytes: Processed audio signal as WAV bytes
     """
     def extract_audio_data(audio_bytes):
-        # with wave.open(io.BytesIO(audio_bytes), 'rb') as wav_file:
         if isinstance(audio_bytes, io.BytesIO):
             audio_bytes.seek(0)  # Move the cursor to the beginning of the BytesIO object
             wav_file = wave.open(audio_bytes, 'rb')

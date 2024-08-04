@@ -9,6 +9,7 @@
 # import modules.decimation_and_interpolation_Dolev_Segev_Yuval as DI
 # import modules.Transmition_And_Reception as SSB 
 # import yaml
+import tempfile
 
 # with open('config.yml', 'r') as f:
 #     config = yaml.safe_load(f)
@@ -115,6 +116,7 @@
 
 import yaml
 import io
+import os
 import wave
 from modules import pdm2pcm_Noam_Tehila as Pdm2Pcm
 from modules import DC_removal as DCRemoval
@@ -170,24 +172,35 @@ def main():
 
     # 7. Speech Speed Modification
     speed_factor = config['SpeechSpeed']['speed_factor']
-    with open(pitch_output, 'rb') as f:
+    with open(noise_reduction_output, 'rb') as f:
         speech_speed_output = SpeechSpeed.process_wav_data(f.read(), speed_factor)
+
+    # Save speech_speed_output to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+        temp_file.write(speech_speed_output)
+        temp_file_path = temp_file.name
 
     # 8. Decimation and Interpolation
     di_mode = config['DI']['decimation_or_interpolation']
     if di_mode == 'decimation':
         di_factor = config['DI']['decimation_factor']
-        di_output = DI.decimate(io.BytesIO(speech_speed_output), di_factor)
+        di_output = DI.decimate(temp_file_path, di_factor)
     elif di_mode == 'interpolation':
         di_factor = config['DI']['interpolation_factor']
         filter_type = config['DI']['interpolation_filter_type']
-        di_output = DI.interpolate(io.BytesIO(speech_speed_output), di_factor, filter_type)
+        di_output = DI.interpolate(temp_file_path, di_factor, filter_type)
     else:
         raise ValueError(f"Invalid DI mode: {di_mode}")
 
+    # Clean up the temporary file
+    os.unlink(temp_file_path)
+
     # 9. SSB Transmission and Reception
     ssb_mode = config['SSB']['ssb_mode']
-    ssb_output = SSB.SSB(mode=ssb_mode, file=io.BytesIO(di_output))
+    with open(di_output, 'rb') as f:
+        di_data = f.read()
+    ssb_output = SSB.SSB(mode=ssb_mode, file=io.BytesIO(di_data))
+
 
     print(f"Final output saved to: {ssb_output}")
 
