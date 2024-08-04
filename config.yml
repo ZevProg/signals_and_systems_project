@@ -14,7 +14,7 @@ threshold = 0.1
 smoothness = 0
 
 AGC:
-
+frame_duration = 0.01
 gain = 0.1
 
 STFT:
