@@ -73,7 +73,7 @@ def check_file(input_file):
     return input_file.lower().endswith('.wav')
 
 
-def NoiseReduction(input_file, output_file, speech_segments):
+def NoiseReduction(input_file, output_file, speech_segments, frame_size, hop_size):
     if not check_file(input_file):
         print("This is not a WAV file")
         return None
@@ -83,9 +83,6 @@ def NoiseReduction(input_file, output_file, speech_segments):
     sample_rate, waveform = wav.read(input_file)
     waveform = waveform.astype(np.float32) / 32768.0  # Normalize to -1 to 1 range
 
-    # Parameters
-    frame_size = config['NoiseReduction']['frame_size']
-    hop_size = config['NoiseReduction']['hop_size']
 
     # Ensure speech_segments length matches the number of STFT frames
     num_frames = 1 + (len(waveform) - frame_size) // hop_size

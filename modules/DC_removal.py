@@ -3,7 +3,7 @@ import numpy as np
 from scipy.io import wavfile
 import io
 
-def DC_Removal_filter(input_file):
+def DC_Removal_filter(input_file,cutoff_frequency=100, numtaps=4400):
     # Check if the input file is a WAV file
     if not isinstance(input_file, (io.BytesIO, wave.Wave_read)):
         return "Error: Input must be a WAV file object."

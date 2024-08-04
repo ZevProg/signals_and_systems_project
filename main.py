@@ -141,17 +141,29 @@ def main():
     pcm_output = Pdm2Pcm.Pdm2Pcm(pdm_file_path, decimation_factor, order, pcm_sample_rate)
 
     # 2. DC removal
-    dc_removal_output = DCRemoval.DC_Removal_filter(io.BytesIO(pcm_output))
+    cutoff_frequency = config['DCRemoval']['cutoff_frequency']
+    numtaps = config['DCRemoval']['numtaps']
+    dc_removal_output = DCRemoval.DC_Removal_filter(io.BytesIO(pcm_output),cutoff_frequency, numtaps)
 
     # 3. Voice Activity Detection
-    vad_output = VAD.process_audio_file(dc_removal_output)
+    frame_duration = config['VAD']['frame_duration']
+    threshold = config['VAD']['threshold']
+    smoothness = config['VAD']['smoothness']
+    remove_dc = config['VAD']['remove_dc']
+    plot_graphs = config['VAD']['plot_graphs']
+    vad_output = VAD.process_audio_file(dc_removal_output, frame_duration, threshold, smoothness, remove_dc, plot_graphs)
 
     # 4. Acoustic Gain Control
-    agc_output = AGC.vad_aware_agc_process(dc_removal_output, vad_output)
+    frame_duration = config['AGC']['frame_duration']
+    gain = config['AGC']['gain']
+    agc_output = AGC.vad_aware_agc_process(dc_removal_output, vad_output, frame_duration, gain)
 
     # 5. Noise Reduction
+    frame_size = config['NoiseReduction']['frame_size']
+    hop_size = config['NoiseReduction']['hop_size']
     noise_reduction_output = 'noise_reduction_output.wav'
-    NoiseReduction.NoiseReduction(io.BytesIO(agc_output), noise_reduction_output, vad_output)
+    # NoiseReduction.NoiseReduction(io.BytesIO(agc_output), noise_reduction_output, vad_output, frame_size, hop_size)
+    NoiseReduction.NoiseReduction(vad_output, noise_reduction_output,io.BytesIO(agc_output) , frame_size, hop_size)
 
     # 6. Pitch Estimation
     pitch_output = PitchEstimation.process_wav_file_pitches(wave.open(noise_reduction_output, 'rb'))

@@ -2,7 +2,7 @@ import numpy as np
 import wave
 import io
 
-def vad_aware_agc_process(input_signal_bytes, binary_vector):
+def vad_aware_agc_process(input_signal_bytes, binary_vector, frame_duration=0.01, gain=0.1):
     """
     Apply VAD-aware Automatic Gain Control (AGC) to the input audio signal.
 
@@ -14,12 +14,17 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
     bytes: Processed audio signal as WAV bytes
     """
     def extract_audio_data(audio_bytes):
-        with wave.open(io.BytesIO(audio_bytes), 'rb') as wav_file:
-            channels = wav_file.getnchannels()
-            bit_depth = wav_file.getsampwidth()
-            sample_rate = wav_file.getframerate()
-            frame_count = wav_file.getnframes()
-            audio_data = wav_file.readframes(frame_count)
+        # with wave.open(io.BytesIO(audio_bytes), 'rb') as wav_file:
+        if isinstance(audio_bytes, io.BytesIO):
+            audio_bytes.seek(0)  # Move the cursor to the beginning of the BytesIO object
+            wav_file = wave.open(audio_bytes, 'rb')
+        else:
+            wav_file = wave.open(io.BytesIO(audio_bytes), 'rb')
+        channels = wav_file.getnchannels()
+        bit_depth = wav_file.getsampwidth()
+        sample_rate = wav_file.getframerate()
+        frame_count = wav_file.getnframes()
+        audio_data = wav_file.readframes(frame_count)
 
         if bit_depth == 1:
             data_type = np.int8

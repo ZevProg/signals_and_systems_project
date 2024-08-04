@@ -216,7 +216,7 @@ class VoiceActivityDetector:
         return binary_sequence
 
 
-def process_audio_file(input_file):
+def process_audio_file(input_file,frame_duration=0.01, threshold=0.1, smoothness=0, remove_dc=False, plot_graphs=False):
     """
     Process the audio file and perform Voice Activity Detection.
     :param input_file: Input file object
