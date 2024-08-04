@@ -85,16 +85,18 @@ def my_interpolation_LPF(L, LPF_type):
     LPF_type: 'shanon', 'ZOH', 'FOH'
     return: impulse response of the interpolation filter
     '''
-    if LPF_type == 'shanon':
-        n = np.arange(- 20 * L, 20 * L + 1)
+ if LPF_type == 'shanon':
+        n = np.arange(-20 * L, 20 * L + 1)
         h = L * np.sin(np.pi / L * n) / (np.pi * n)
         h[n == 0] = 1
     elif LPF_type == 'ZOH':
         h = np.ones(L)
     elif LPF_type == 'FOH':
-        impuls_response_step = np.ones(L)
-        impuls_response_triangle = my_convolution( impuls_response_step,  impuls_response_step, mode='full')
-        h = impuls_response_triangle / np.max(impuls_response_triangle)
+        impulse_response_step = np.ones(L)
+        impulse_response_triangle = my_convolution(impulse_response_step, impulse_response_step, mode='full')
+        h = impulse_response_triangle / np.max(impulse_response_triangle)
+    else:
+        raise ValueError("Invalid filter type. Choose 'shanon', 'ZOH', or 'FOH'.")
     return h
 
 
