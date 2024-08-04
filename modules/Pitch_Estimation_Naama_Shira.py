@@ -25,12 +25,6 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
     corr = np.correlate(windowed_frame, windowed_frame, mode='full')
     corr = corr[len(corr) // 2:]
     
-    # aautocorrelte the hann window
-    NormalizedHannWindow = np.correlate(np.hanning(len(frame)), np.hanning(len(frame)), mode='full')
-    NormalizedHannWindow=NormalizedHannWindow[len(corr)-1:]
-    # Normalize the autocorrelation by the autocorrelation of the window
-    corr = np.divide(corr , NormalizedHannWindow)  
-
     # Thresholding the autocorrelation to remove low-magnitude peaks
     corr[corr < 0.1 * np.max(corr)] = 0
    
@@ -105,12 +99,14 @@ def process_wav_file_pitches(wf):
     #plt.legend()
     #plt.grid()
     #plt.show()
+
     return pitches #return the pitches array.
+
 
 
 # EXAMPLE
 #from PitchEstimation import process_wav_file_pitches #how to use the function
-#file_path = 'C:/Users/Shira/שירה/אוניברסיטה/סמסטר ד/אותות ומערכות/עבודה חלק ב/about_time.wav' #path to the wav file
+#file_path = 'C:/Users/Shira/שירה/אוניברסיטה/סמסטר ד/אותות ומערכות/עבודה חלק ב/cleaned_test1.wav' #path to the wav file
 #open the wav file
 #wf = wave.open(file_path, 'rb')
 #pitches=process_wav_file_pitches(wf)
