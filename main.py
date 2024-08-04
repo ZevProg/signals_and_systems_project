@@ -80,3 +80,15 @@ else:
 #interpolate_signal2 = interpolate(interpolate_signal, interpolation_factor, filter_type)
 #interpolate_signal3 = interpolate(interpolate_signal2, interpolation_factor, filter_type)
 
+
+# Shahar Goldstein
+
+#Pitch Estimation
+audio_data = # The output of "Noise Reduction"
+pitch_output = PitchEstimation(audio_data)
+# Now We can plot the pitch if needed
+
+#SpeechSpeed
+speed_factor = config['SpeechSpeed']['speed_factor']
+input_wave_data = # The output of "Noise Reduction"
+new_speed_speech = SpeechSpeed(input_wave_data)
