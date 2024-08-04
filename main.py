@@ -155,7 +155,7 @@ def main():
 
     # 7. Speech Speed Modification
     speed_factor = config['SpeechSpeed']['speed_factor']
-    with open(noise_reduction_output, 'rb') as f:
+    with open(pitch_output, 'rb') as f:
         speech_speed_output = SpeechSpeed.process_wav_data(f.read(), speed_factor)
 
     # 8. Decimation and Interpolation

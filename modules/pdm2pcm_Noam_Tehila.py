@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 from scipy.io.wavfile import write
 import io
 

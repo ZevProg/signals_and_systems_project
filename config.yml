@@ -1,5 +1,5 @@
 Pdm2Pcm:
-  user_pdm_file_path: 'path_to_pdm_file.txt'
+  user_pdm_file_path: '/Users/zeevi/Downloads/Unproductive activity.wav'
   pcm_sample_rate: 8000  
   decimation_factor: 64  
   order: 4 
@@ -23,7 +23,7 @@ NoiseReduction:
   frame_size: 2048
   hop_size: 512
 
-PitchEstimation:
+# PitchEstimation:
 
 SpeechSpeed:
   speed_factor: 1.5
@@ -38,7 +38,3 @@ DI:
 SSB:
   ssb_mode: 'file' #'live', 'file'  
 
-example:
-  number_of_frames: 10
-  filter: 'lowpass' # 'lowpass', 'highpass', 'bandpass', 'bandstop'
-  remove_dc: true
