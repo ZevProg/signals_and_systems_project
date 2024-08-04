@@ -232,7 +232,19 @@ def process_audio_file(input_file):
 
 
 # def main():
+
+    # input_file_path = "C:\\temp\signal_system\\Heartbeat.wav"
+    # input_file_path ="C:\\temp\\signal_system\\Counting.wav"
+    # input_file_path = "C:\\temp\signal_system\\about_time.wav"
+    # input_file_path = "C:\\temp\\signal_system\\activity_unproductive.wav"
+    # input_file_path = "C:\\temp\\vad_test\mp3.mp3"
+
+    # with open(input_file_path, 'rb') as f:
+        # output_wav = io.BytesIO(f.read())
+        # output_wav.seek(0)
+
     # binary_vector = process_audio_file(output_wav)
+    # print(binary_vector)
     # return binary_vector
 
 
