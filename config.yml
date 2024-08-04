@@ -9,8 +9,13 @@ cutoff_frequency:100
 numtaps=4400
 
 VAD:
+frame_duration = 0.01
+threshold = 0.1
+smoothness = 0
 
 AGC:
+
+gain = 0.1
 
 STFT:
 
