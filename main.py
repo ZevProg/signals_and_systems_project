@@ -162,8 +162,8 @@ def main():
     frame_size = config['NoiseReduction']['frame_size']
     hop_size = config['NoiseReduction']['hop_size']
     noise_reduction_output = 'noise_reduction_output.wav'
-    # NoiseReduction.NoiseReduction(io.BytesIO(agc_output), noise_reduction_output, vad_output, frame_size, hop_size)
-    NoiseReduction.NoiseReduction(vad_output, noise_reduction_output,io.BytesIO(agc_output) , frame_size, hop_size)
+    NoiseReduction.NoiseReduction(io.BytesIO(agc_output), noise_reduction_output, vad_output, frame_size, hop_size)
+
 
     # 6. Pitch Estimation
     pitch_output = PitchEstimation.process_wav_file_pitches(wave.open(noise_reduction_output, 'rb'))

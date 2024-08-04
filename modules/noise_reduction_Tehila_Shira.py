@@ -70,7 +70,7 @@ def ISTFT(stft_matrix, sample_rate, window_size, hop_size, output_wav):
 
 
 def check_file(input_file):
-    return input_file.lower().endswith('.wav')
+    return True #input_file.lower().endswith('.wav')
 
 
 def NoiseReduction(input_file, output_file, speech_segments, frame_size, hop_size):
