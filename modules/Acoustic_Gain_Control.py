@@ -55,9 +55,6 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
     # Calculate adaptive parameters
     attack_time, release_time, noise_floor, rms_window_ms = calculate_parameters(input_signal, sample_rate)
 
-    # Constants
-    frame_duration = 0.01  # 10ms frame duration
-
     # Convert time constants to sample counts
     frame_length_samples = int(frame_duration * sample_rate)
     attack_samples = int(attack_time * sample_rate)
@@ -83,8 +80,6 @@ def vad_aware_agc_process(input_signal_bytes, binary_vector):
     envelope = np.zeros_like(input_signal)
     agc_signal = np.zeros_like(input_signal)
     noise_floor_linear = 10 ** (noise_floor / 20)
-
-    gain = 1.0
 
     # Process each sample
     for i in range(len(input_signal)):
