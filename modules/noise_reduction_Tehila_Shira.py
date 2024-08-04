@@ -249,9 +249,11 @@ def ISTFT(stft_matrix, hop_size=512):
 
     return reconstructed_signal
 
+
 def check_file(input_file):
     return input_file.lower().endswith('.wav')
 
+ 
 def NoiseReduction(input_file, output_file, speech_segments):
     if not check_file(input_file):
         print("This is not a WAV file")
@@ -268,6 +270,7 @@ def NoiseReduction(input_file, output_file, speech_segments):
 
     # Ensure speech_segments length matches the number of STFT frames
     num_frames = 1 + (len(waveform) - frame_size) // hop_size
+    speech_segments = np.array([int(s) for s in speech_segments.split(',')])  # Changed this line
     if len(speech_segments) > num_frames:
         speech_segments = speech_segments[:num_frames]
     elif len(speech_segments) < num_frames:
@@ -283,7 +286,7 @@ def NoiseReduction(input_file, output_file, speech_segments):
     non_speech_frame_count = 0
 
     for i, is_speech in enumerate(speech_segments):
-        if is_speech=='0':
+        if is_speech == 0:  # Changed this line
             noise_spectrum += magnitude_spectrum[:, i]
             non_speech_frame_count += 1
 
@@ -302,9 +305,10 @@ def NoiseReduction(input_file, output_file, speech_segments):
 
     mean_noise_spectrum = noise_spectrum
 
-    # Noise reduction
-    cleaned_spectrum = magnitude_spectrum - mean_noise_spectrum.reshape((mean_noise_spectrum.shape[0], 1))
-    cleaned_spectrum = np.maximum(cleaned_spectrum, 0)  # Ensure no negative values
+    # Noise reduction with oversubtraction and flooring
+    alpha = 2  # Oversubtraction factor
+    beta = 0.01  # Spectral floor
+    cleaned_spectrum = np.maximum(magnitude_spectrum - alpha * mean_noise_spectrum.reshape((mean_noise_spectrum.shape[0], 1)), beta * magnitude_spectrum)  # Changed this line
 
     # Reconstruct signal using inverse STFT
     cleaned_complex_spectrum = cleaned_spectrum * np.exp(1.0j * phase_spectrum)
@@ -314,8 +318,10 @@ def NoiseReduction(input_file, output_file, speech_segments):
     output_waveform = output_waveform * 32768
     output_waveform = np.int16(output_waveform / np.max(np.abs(output_waveform)) * 32767)  # Normalize to 16-bit range
     wav.write(output_file, sample_rate, output_waveform)
-    print('Output wav file saved:', output_file)
+    print('Output wav file saved:', output_file)   
+       
 
+    
 
 def main():
     # Parameters
