@@ -2,6 +2,8 @@ import numpy as np
 import scipy
 from scipy.io.wavfile import write
 import io
+import yaml
+
 
 def read_pdm_file(file_path):
     """
@@ -102,7 +104,7 @@ def save_pcm_as_wav_file(pcm_signal, sample_rate):
     wav_data = wav_buffer.getvalue()
     return wav_data
 
-def Pdm2Pcm(pdm_file_path):
+def Pdm2Pcm(pdm_file_path, decimation_factor=64, order=4, pcm_sample_rate=8000):
     """
     Converts a PDM signal from a file to a PCM signal and saves it as a WAV file.
 

@@ -85,7 +85,7 @@ def my_interpolation_LPF(L, LPF_type):
     LPF_type: 'shanon', 'ZOH', 'FOH'
     return: impulse response of the interpolation filter
     '''
- if LPF_type == 'shanon':
+    if LPF_type == 'shanon':
         n = np.arange(-20 * L, 20 * L + 1)
         h = L * np.sin(np.pi / L * n) / (np.pi * n)
         h[n == 0] = 1

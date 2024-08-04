@@ -135,7 +135,10 @@ def main():
 
     # 1. PDM to PCM conversion
     pdm_file_path = config['Pdm2Pcm']['user_pdm_file_path']
-    pcm_output = Pdm2Pcm.Pdm2Pcm(pdm_file_path)
+    decimation_factor = config['Pdm2Pcm']['decimation_factor']
+    order = config['Pdm2Pcm']['order']
+    pcm_sample_rate = config['Pdm2Pcm']['pcm_sample_rate']
+    pcm_output = Pdm2Pcm.Pdm2Pcm(pdm_file_path, decimation_factor, order, pcm_sample_rate)
 
     # 2. DC removal
     dc_removal_output = DCRemoval.DC_Removal_filter(io.BytesIO(pcm_output))
