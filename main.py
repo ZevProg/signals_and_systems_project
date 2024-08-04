@@ -32,7 +32,24 @@ numtaps=config['DCRemoval']['numtaps']
 #Removal of the DC part of the signal
 dc_removal_output=DC_Removal_filter(pdm_output) 
 
+#Aviya Nave
 
+#VAD confing
+frame_duration = config['VAD']['frame_duration']
+threshold = config['VAD']['threshold']
+smoothness = config['VAD']['smoothness']
+
+#DC to VAD
+#binary vector for speech detection (1 for speech 0 for noise)
+binary_vector  =  process_audio_file(dc_removal_output)
+
+#AGC confing
+frame_duration = config['AGC']['frame_duration']
+gain = config['AGC']['gain']
+
+#VAD to AGC
+#applying AGC based on voice activity detection (using VAD output) 
+agc_output =  vad_aware_agc_process(dc_removal_output, binary_vector)
 
 
 #ido leibowitz
