@@ -26,6 +26,7 @@ NoiseReduction:
 PitchEstimation:
 
 SpeechSpeed:
+  speed_factor: 1.5
 
 DI:
 #decimation and interpolation
