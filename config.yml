@@ -1,27 +1,27 @@
 Pdm2Pcm:
-user_pdm_file_path:'path_to_pdm_file.txt'
-pcm_sample_rate:8000  
-decimation_factor:64  
-order:4 
+  user_pdm_file_path: 'path_to_pdm_file.txt'
+  pcm_sample_rate: 8000  
+  decimation_factor: 64  
+  order: 4 
 
 DCRemoval:
-cutoff_frequency:100
-numtaps=4400
+  cutoff_frequency: 100
+  numtaps: 4400
 
 VAD:
-frame_duration = 0.01 #10nm frame duration
-threshold = 0.1
-smoothness = 0
-remove_dc = False 
-plot_graphs = False
+  frame_duration: 0.01  #10nm frame duration
+  threshold : 0.1
+  smoothness : 0
+  remove_dc : False 
+  plot_graphs : False
 
 AGC:
-frame_duration = 0.01
-gain = 0.1
-
-STFT:
+  frame_duration : 0.01
+  gain : 0.1
 
 NoiseReduction:
+  frame_size: 2048
+  hop_size: 512
 
 PitchEstimation:
 
@@ -31,7 +31,7 @@ DI:
 #decimation and interpolation
   decimation_factor: 4
   interpolation_factor: 5
-  decimation_or_interpolation:'interpolation' #'decimation', 'interpolation'
+  decimation_or_interpolation: 'interpolation' #'decimation', 'interpolation'
   interpolation_filter_type: 'ZOH' #'ZOH', 'FOH', 'shanon' 
 
 SSB:
