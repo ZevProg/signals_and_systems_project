@@ -12,6 +12,8 @@ VAD:
 frame_duration = 0.01
 threshold = 0.1
 smoothness = 0
+remove_dc = False 
+plot_graphs = False
 
 AGC:
 frame_duration = 0.01
