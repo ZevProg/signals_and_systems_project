@@ -92,5 +92,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # remember to install the required packages
-    # pip install -r requirements.txt
