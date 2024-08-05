@@ -4,3 +4,4 @@ scipy~=1.13.1
 soundfile~=0.12.1
 matplotlib~=3.9.1
 sounddevice~=0.4.7
+

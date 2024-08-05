@@ -25,6 +25,12 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
     corr = np.correlate(windowed_frame, windowed_frame, mode='full')
     corr = corr[len(corr) // 2:]
     
+    # aautocorrelte the hann window
+    NormalizedHannWindow = np.correlate(np.hanning(len(frame)), np.hanning(len(frame)), mode='full')
+    NormalizedHannWindow=NormalizedHannWindow[len(corr)-1:]
+    # Normalize the autocorrelation by the autocorrelation of the window
+    corr = np.divide(corr , NormalizedHannWindow)  
+
     # Thresholding the autocorrelation to remove low-magnitude peaks
     corr[corr < 0.1 * np.max(corr)] = 0
    
@@ -61,7 +67,7 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
     return pitch
 
 # Convert wav file to numpy array and plot results for each frame.  used to show the pitch estimation over time
-def process_wav_file_pitches(wf):
+def process_wav_file_pitches(wf, plot_pitch_estimation=False):
     # Open the WAV file
     num_channels = wf.getnchannels()
     sampwidth = wf.getsampwidth()
@@ -89,24 +95,24 @@ def process_wav_file_pitches(wf):
         # Optional: Apply median filter to smooth pitch estimates. only used for the plot
     #if len(pitches) > 0:
         #pitches = scipy.signal.medfilt(pitches, kernel_size=5)
-        
+
+    if plot_pitch_estimation:
         # Plot the detected pitches
-    #plt.figure(figsize=(10, 6))
-    #plt.plot(pitches, label='Detected Pitch')
-    #plt.xlabel('Frame')
-    #plt.ylabel('Pitch (Hz)')
-    #plt.title('Pitch Estimation Over Time')
-    #plt.legend()
-    #plt.grid()
-    #plt.show()
-
+        t = np.arange(len(pitches)) * CHUNK / framerate
+        plt.figure(figsize=(10, 6))
+        plt.plot(t, pitches, label='Detected Pitch')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pitch (Hz)')
+        plt.title('Pitch Estimation Over Time')
+        plt.legend()
+        plt.grid()
+        plt.show()
     return pitches #return the pitches array.
-
 
 
 # EXAMPLE
 #from PitchEstimation import process_wav_file_pitches #how to use the function
-#file_path = 'C:/Users/Shira/שירה/אוניברסיטה/סמסטר ד/אותות ומערכות/עבודה חלק ב/cleaned_test1.wav' #path to the wav file
+#file_path = 'C:/Users/Shira/שירה/אוניברסיטה/סמסטר ד/אותות ומערכות/עבודה חלק ב/about_time.wav' #path to the wav file
 #open the wav file
 #wf = wave.open(file_path, 'rb')
 #pitches=process_wav_file_pitches(wf)

@@ -1,3 +1,4 @@
+import io
 import wave
 import numpy as np
 import matplotlib.pyplot as plt
@@ -69,9 +70,14 @@ def ISTFT(stft_matrix, sample_rate, window_size, hop_size, output_wav):
     wav.write(output_wav, sample_rate, reconstructed_signal)
 
 
-def check_file(input_file):
-    return True #input_file.lower().endswith('.wav')
 
+def check_file(input_file):
+    if isinstance(input_file, str):
+        return input_file.lower().endswith('.wav')
+    elif isinstance(input_file, io.BytesIO):
+        return True
+    else:
+        return False
 
 def NoiseReduction(input_file, output_file, speech_segments, frame_size, hop_size):
     if not check_file(input_file):
@@ -80,8 +86,17 @@ def NoiseReduction(input_file, output_file, speech_segments, frame_size, hop_siz
 
     # Load input file
     print('Loading wav file:', input_file)
-    sample_rate, waveform = wav.read(input_file)
-    waveform = waveform.astype(np.float32) / 32768.0  # Normalize to -1 to 1 range
+    with wave.open(input_file, 'rb') as wav_file:
+        sample_rate = wav_file.getframerate()
+        num_channels = wav_file.getnchannels()
+        sample_width = wav_file.getsampwidth()
+        num_frames = wav_file.getnframes()
+        waveform = wav_file.readframes(num_frames)
+        waveform = np.frombuffer(waveform, dtype=np.int16)
+        if num_channels > 1:
+            waveform = waveform.reshape(-1, num_channels).mean(axis=1)
+        waveform = waveform.astype(np.float32) / 32768.0  # Normalize to -1 to 1 range
+
 
 
     # Ensure speech_segments length matches the number of STFT frames

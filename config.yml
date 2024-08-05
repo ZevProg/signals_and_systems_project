@@ -23,7 +23,8 @@ NoiseReduction:
   frame_size: 2048
   hop_size: 512
 
-# PitchEstimation:
+PitchEstimation:
+  plot_pitch_estimation: False
 
 SpeechSpeed:
   speed_factor: 0.5
