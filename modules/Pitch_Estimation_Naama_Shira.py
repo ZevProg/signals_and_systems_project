@@ -61,7 +61,7 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
     return pitch
 
 # Convert wav file to numpy array and plot results for each frame.  used to show the pitch estimation over time
-def process_wav_file_pitches(wf):
+def process_wav_file_pitches(wf, plot_pitch_estimation=False):
     # Open the WAV file
     num_channels = wf.getnchannels()
     sampwidth = wf.getsampwidth()
@@ -91,14 +91,17 @@ def process_wav_file_pitches(wf):
         #pitches = scipy.signal.medfilt(pitches, kernel_size=5)
         
         # Plot the detected pitches
-    #plt.figure(figsize=(10, 6))
-    #plt.plot(pitches, label='Detected Pitch')
-    #plt.xlabel('Frame')
-    #plt.ylabel('Pitch (Hz)')
-    #plt.title('Pitch Estimation Over Time')
-    #plt.legend()
-    #plt.grid()
-    #plt.show()
+    if plot_pitch_estimation:
+        # Plot the detected pitches
+        t = np.arange(len(pitches)) * CHUNK / framerate
+        plt.figure(figsize=(10, 6))
+        plt.plot(t, pitches, label='Detected Pitch')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pitch (Hz)')
+        plt.title('Pitch Estimation Over Time')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
     return pitches #return the pitches array.
 
