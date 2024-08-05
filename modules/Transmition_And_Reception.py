@@ -109,59 +109,60 @@ def SSB(mode='file', file=None, carrier_freq=10000, samplerate=44100):
         except ValueError as e:
             print(e)
 
-    elif mode == 'live':
-        global recorded_data
-        recorded_data = []
-
-        # Thread for stopping the recording on Enter key press
-        def wait_for_enter():
-            input("Press Enter to stop recording...\n")
-            sd.stop()
-
-        enter_thread = threading.Thread(target=wait_for_enter)
-        enter_thread.start()
-
-        def callback(indata, outdata, frames, time, status):
-            recorded_data.append(indata.copy())
-            audio_callback(indata, outdata, frames, time, status)
-
-        # Start the stream for real-time recording and processing
-        with sd.Stream(samplerate=samplerate, channels=2, callback=callback):
-            print("Recording and processing in real-time. Press Enter to stop.")
-            enter_thread.join()  # Wait until Enter is pressed
-
-        # Convert the list of arrays to a single array
-        recorded_data = np.concatenate(recorded_data, axis=0)
-
-        # Process the recorded data for plotting purposes
-        t = np.arange(len(recorded_data)) / samplerate
-        save_wav('recording.wav', recorded_data, samplerate)
-        plt.figure()
-        plt.subplot(3, 1, 1)
-        plt.plot(np.fft.fftfreq(len(t), 1 / samplerate), np.abs(np.fft.fft(recorded_data[:, 0])))
-        plt.title('Original Baseband Signal')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude')
-
-        ssb_signal = ssb_modulate(recorded_data[:, 0], carrier_freq, samplerate)
-        plt.subplot(3, 1, 2)
-        plt.plot(np.fft.fftfreq(len(t), 1 / samplerate), np.abs(np.fft.fft(ssb_signal)))
-        plt.title('SSB Modulated Signal (Upper Sideband)')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude')
-
-        recovered_signal = ssb_demodulate(ssb_signal, carrier_freq, samplerate)
-        save_wav('recording_modulated.wav', recovered_signal, samplerate)
-        plt.subplot(3, 1, 3)
-        plt.plot(np.fft.fftfreq(len(t), 1 / samplerate), np.abs(np.fft.fft(recovered_signal)))
-        plt.title('Demodulated Signal')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude')
-
-        plt.tight_layout()
-        plt.show()
-
-        return recovered_signal
+    # 'live' option is in beta
+    # elif mode == 'live':
+    #     global recorded_data
+    #     recorded_data = []
+    #
+    #     # Thread for stopping the recording on Enter key press
+    #     def wait_for_enter():
+    #         input("Press Enter to stop recording...\n")
+    #         sd.stop()
+    #
+    #     enter_thread = threading.Thread(target=wait_for_enter)
+    #     enter_thread.start()
+    #
+    #     def callback(indata, outdata, frames, time, status):
+    #         recorded_data.append(indata.copy())
+    #         audio_callback(indata, outdata, frames, time, status)
+    #
+    #     # Start the stream for real-time recording and processing
+    #     with sd.Stream(samplerate=samplerate, channels=2, callback=callback):
+    #         print("Recording and processing in real-time. Press Enter to stop.")
+    #         enter_thread.join()  # Wait until Enter is pressed
+    #
+    #     # Convert the list of arrays to a single array
+    #     recorded_data = np.concatenate(recorded_data, axis=0)
+    #
+    #     # Process the recorded data for plotting purposes
+    #     t = np.arange(len(recorded_data)) / samplerate
+    #     save_wav('recording.wav', recorded_data, samplerate)
+    #     plt.figure()
+    #     plt.subplot(3, 1, 1)
+    #     plt.plot(np.fft.fftfreq(len(t), 1 / samplerate), np.abs(np.fft.fft(recorded_data[:, 0])))
+    #     plt.title('Original Baseband Signal')
+    #     plt.xlabel('Frequency (Hz)')
+    #     plt.ylabel('Amplitude')
+    #
+    #     ssb_signal = ssb_modulate(recorded_data[:, 0], carrier_freq, samplerate)
+    #     plt.subplot(3, 1, 2)
+    #     plt.plot(np.fft.fftfreq(len(t), 1 / samplerate), np.abs(np.fft.fft(ssb_signal)))
+    #     plt.title('SSB Modulated Signal (Upper Sideband)')
+    #     plt.xlabel('Frequency (Hz)')
+    #     plt.ylabel('Amplitude')
+    #
+    #     recovered_signal = ssb_demodulate(ssb_signal, carrier_freq, samplerate)
+    #     save_wav('recording_modulated.wav', recovered_signal, samplerate)
+    #     plt.subplot(3, 1, 3)
+    #     plt.plot(np.fft.fftfreq(len(t), 1 / samplerate), np.abs(np.fft.fft(recovered_signal)))
+    #     plt.title('Demodulated Signal')
+    #     plt.xlabel('Frequency (Hz)')
+    #     plt.ylabel('Amplitude')
+    #
+    #     plt.tight_layout()
+    #     plt.show()
+    #
+    #     return recovered_signal
 
     else:
         print("Invalid mode or filename not provided for file mode.")

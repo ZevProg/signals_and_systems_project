@@ -1,5 +1,5 @@
 Pdm2Pcm:
-  user_pdm_file_path: '/Users/zeevi/Desktop/Untitled.txt'
+  user_pdm_file_path: 'input_path.txt'
   pcm_sample_rate: 8000  
   decimation_factor: 64  
   order: 4 
@@ -39,5 +39,5 @@ DI:
 SSB:
   carrier_freq: 10000
   samplerate:  44100
-  ssb_mode: 'live' #'live', 'file'
+  ssb_mode: 'file' #'live' option is in beta
 
