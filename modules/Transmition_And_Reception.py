@@ -8,14 +8,10 @@ import sounddevice as sd
 import threading
 import os
 
-def SSB(mode='file', file=None):
-    carrier_freq = 10000
-    samplerate = 44100
+def SSB(mode='file', file=None, carrier_freq=10000, samplerate=44100):
 
     # Load the WAV file
     def load_wav(file):
-        if not os.path.exists(file):
-            raise FileNotFoundError(f"The file '{file}' does not exist.")
         data, samplerate = sf.read(file)
         if len(data) == 0:
             raise ValueError("The WAV file is empty.")

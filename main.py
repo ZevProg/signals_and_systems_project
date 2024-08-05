@@ -83,9 +83,11 @@ def main():
 
     # 9. SSB Transmission and Reception
     ssb_mode = config['SSB']['ssb_mode']
+    carrier_freq = config['SSB']['carrier_freq']
+    samplerate = config['SSB']['samplerate']
     with open(di_output, 'rb') as f:
         di_data = f.read()
-    ssb_output = SSB.SSB(mode=ssb_mode, file=io.BytesIO(di_data))
+    ssb_output = SSB.SSB(mode=ssb_mode, file=io.BytesIO(di_data), carrier_freq=carrier_freq, samplerate=samplerate)
 
 
     print(f"Final output saved to: {ssb_output}")

@@ -1,5 +1,5 @@
 Pdm2Pcm:
-  user_pdm_file_path: 'path.txt'
+  user_pdm_file_path: '/Users/zeevi/Desktop/Untitled.txt'
   pcm_sample_rate: 8000  
   decimation_factor: 64  
   order: 4 
@@ -37,5 +37,7 @@ DI:
   interpolation_filter_type: 'ZOH' #'ZOH', 'FOH', 'shanon' 
 
 SSB:
-  ssb_mode: 'file' #'live', 'file'  
+  carrier_freq: 10000
+  samplerate:  44100
+  ssb_mode: 'live' #'live', 'file'
 
