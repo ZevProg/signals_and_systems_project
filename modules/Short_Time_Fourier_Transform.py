@@ -4,14 +4,11 @@ import warnings  # Import warnings module for managing warnings
 
 warnings.filterwarnings("ignore", category=wavfile.WavFileWarning)  # Ignore WAV warnings
 
-
 # Function to create a Hanning window
 # Input: window_length (int) - the length of the window
 # Output: A numpy array representing the Hanning window
 def CreateHanningWindow(window_length):
-    return 0.5 * (1 - np.cos(
-        2 * np.pi * np.arange(window_length) / (window_length - 1)))  # Create Hanning window of given length
-
+    return 0.5 * (1 - np.cos(2 * np.pi * np.arange(window_length) / (window_length - 1)))  # Create Hanning window of given length
 
 # Function to compute the Fast Fourier Transform (FFT)
 # Input: signal (numpy array) - the input signal
@@ -25,7 +22,6 @@ def FFT(signal):
     T = np.exp(-2j * np.pi * np.arange(N) / N)  # Compute FFT factors
     return np.concatenate([even + T[:N // 2] * odd, even + T[N // 2:] * odd])  # Combine results
 
-
 # Function to compute the Inverse Fast Fourier Transform (IFFT)
 # Input: spectrum (numpy array) - the input spectrum
 # Output: A numpy array representing the IFFT of the input spectrum
@@ -37,7 +33,6 @@ def IFFT(spectrum):
     odd = IFFT(spectrum[1::2])  # Compute IFFT for odd indexed elements
     T = np.exp(2j * np.pi * np.arange(N) / N)  # Compute IFFT factors
     return (np.concatenate([even + T[:N // 2] * odd, even + T[N // 2:] * odd]) / 2)  # Combine results and divide by 2
-
 
 # Function to compute the Short-Time Fourier Transform (STFT)
 # Input: input_wav (str) - path to the input WAV file
@@ -53,6 +48,9 @@ def STFT(input_wav, window_size=2048, hop_size=512):
     elif np.issubdtype(audio_signal.dtype, np.floating):  # Check if the signal is of float type
         audio_signal /= np.max(np.abs(audio_signal))  # Normalize by the maximum absolute value in the signal
 
+    if len(audio_signal.shape) == 2:  # Check if the signal is stereo
+        audio_signal = np.mean(audio_signal, axis=1)  # Convert to mono by averaging the channels
+
     window = CreateHanningWindow(window_size)  # Create Hanning window of given length
     num_frames = 1 + (len(audio_signal) - window_size) // hop_size  # Compute the number of windows
     stft_matrix = np.zeros((window_size, num_frames), dtype=np.complex128)  # Create matrix to store STFT results
@@ -65,7 +63,6 @@ def STFT(input_wav, window_size=2048, hop_size=512):
 
     return stft_matrix, sample_rate  # Return STFT matrix and sample rate
 
-
 # Function to compute the Inverse Short-Time Fourier Transform (ISTFT)
 # Input: stft_matrix (numpy array) - the STFT matrix
 #        sample_rate (int) - the sample rate
@@ -75,15 +72,27 @@ def STFT(input_wav, window_size=2048, hop_size=512):
 # Output: None (writes the reconstructed signal to the output WAV file)
 def ISTFT(stft_matrix, sample_rate, window_size, hop_size, output_wav):
     num_frames = stft_matrix.shape[1]  # Compute the number of windows
-    expected_signal_length = window_size + hop_size * (
-                num_frames - 1)  # Compute expected length of the reconstructed signal
-    reconstructed_signal = np.zeros(expected_signal_length,
-                                    dtype=np.float64)  # Create array to store reconstructed signal
+    expected_signal_length = window_size + hop_size * (num_frames - 1)  # Compute expected length of the reconstructed signal
+    reconstructed_signal = np.zeros(expected_signal_length, dtype=np.float64)  # Create array to store reconstructed signal
     window = CreateHanningWindow(window_size)  # Create Hanning window of given length
 
     for frame in range(num_frames):  # Loop over all windows
         start = frame * hop_size  # Compute start of the window
         end = start + window_size  # Compute end of the window
         frame_data = IFFT(stft_matrix[:, frame])  # Compute IFFT for the window
-        reconstructed_signal[start:end] += np.real(
-            frame_data) * window  # Add reconstructed window to the reconstructed signal
+        reconstructed_signal[start:end] += np.real(frame_data) * window  # Add reconstructed window to the reconstructed signal
+
+    normalization = np.zeros_like(reconstructed_signal)  # Create array for normalization
+    for frame in range(num_frames):  # Loop over all windows
+        start = frame * hop_size  # Compute start of the window
+        end = start + window_size  # Compute end of the window
+        normalization[start:end] += window ** 2  # Compute normalization by squaring the window
+
+    epsilon = 1e-8  # Small value to avoid division by zero
+    reconstructed_signal /= (normalization + epsilon)  # Normalize the reconstructed signal
+
+    reconstructed_signal = np.clip(reconstructed_signal, -1.0, 1.0)  # Clip the signal to the range [-1, 1]
+    reconstructed_signal = (reconstructed_signal * 32767).astype(np.int16)  # Convert to int16 range
+
+    wavfile.write(output_wav, sample_rate, reconstructed_signal)  # Write the reconstructed signal to the output WAV file
+
