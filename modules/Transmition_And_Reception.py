@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import scipy
 import sounddevice as sd
 import threading
+import os
 
 def SSB(mode='file', file=None):
     carrier_freq = 10000
@@ -13,7 +14,11 @@ def SSB(mode='file', file=None):
 
     # Load the WAV file
     def load_wav(file):
+        if not os.path.exists(file):
+            raise FileNotFoundError(f"The file '{file}' does not exist.")
         data, samplerate = sf.read(file)
+        if len(data) == 0:
+            raise ValueError("The WAV file is empty.")
         if data.ndim > 1:  # Handle stereo by taking only one channel
             data = data[:, 0]  # Use only the first channel for stereo files
         return data, samplerate
@@ -61,46 +66,52 @@ def SSB(mode='file', file=None):
             outdata[:, 1] = recovered_signal
 
     if mode == 'file' and file:
-        # Load the input WAV file
-        data, samplerate = load_wav(file)
-        carrier_freq = samplerate / 2  # Set carrier frequency to half the sample rate
+        try:
+            # Load the input WAV file
+            data, samplerate = load_wav(file)
+            carrier_freq = samplerate / 2  # Set carrier frequency to half the sample rate
 
-        # Modulate the signal using SSB
-        ssb_signal = ssb_modulate(data, carrier_freq, samplerate)
+            # Modulate the signal using SSB
+            ssb_signal = ssb_modulate(data, carrier_freq, samplerate)
 
-        # Demodulate the signal to recover the original data
-        recovered_signal = 0.5 * ssb_demodulate(ssb_signal, carrier_freq, samplerate)
+            # Demodulate the signal to recover the original data
+            recovered_signal = 0.5 * ssb_demodulate(ssb_signal, carrier_freq, samplerate)
 
-        # Save the recovered signal to an output WAV file
-        output_filename = 'output_file.wav'
-        save_wav(output_filename, recovered_signal, samplerate)
+            # Save the recovered signal to an output WAV file
+            output_filename = 'output_file.wav'
+            save_wav(output_filename, recovered_signal, samplerate)
 
-        # Plotting the signals
-        t = np.arange(len(data)) / samplerate
+            # Plotting the signals
+            t = np.arange(len(data)) / samplerate
 
-        plt.figure()
-        plt.subplot(3, 1, 1)
-        plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(data))
-        plt.title('Original Baseband Signal')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude')
+            plt.figure()
+            plt.subplot(3, 1, 1)
+            plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(data))
+            plt.title('Original Baseband Signal')
+            plt.xlabel('Frequency (Hz)')
+            plt.ylabel('Amplitude')
 
-        plt.subplot(3, 1, 2)
-        plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(ssb_signal))
-        plt.title('SSB Modulated Signal (Upper Sideband)')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude')
+            plt.subplot(3, 1, 2)
+            plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(ssb_signal))
+            plt.title('SSB Modulated Signal (Upper Sideband)')
+            plt.xlabel('Frequency (Hz)')
+            plt.ylabel('Amplitude')
 
-        plt.subplot(3, 1, 3)
-        plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(recovered_signal))
-        plt.title('Demodulated Signal')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude')
+            plt.subplot(3, 1, 3)
+            plt.plot(np.fft.fftfreq(len(t)), np.fft.fft(recovered_signal))
+            plt.title('Demodulated Signal')
+            plt.xlabel('Frequency (Hz)')
+            plt.ylabel('Amplitude')
 
-        plt.tight_layout()
-        plt.show()
+            plt.tight_layout()
+            plt.show()
 
-        return output_filename
+            return output_filename
+        
+        except FileNotFoundError as e:
+            print(e)
+        except ValueError as e:
+            print(e)
 
     elif mode == 'live':
         global recorded_data
