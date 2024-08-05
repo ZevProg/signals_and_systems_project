@@ -66,7 +66,7 @@ def pitch_estimation(frame, fs, min_pitch, max_pitch):
         return None
     return pitch
 
-# Convert wav file to numpy array and plot results for each frame.  used to show the pitch estimation over time
+#Convert wav file to numpy array and plot results for each frame.  used to show the pitch estimation over time
 def process_wav_file_pitches(wf, plot_pitch_estimation=False):
     # Open the WAV file
     num_channels = wf.getnchannels()
